@@ -3,6 +3,11 @@ var canvas = $("#viewport").get(0);
 var g = canvas.getContext("2d");
 var ASTEROID_POINTS = 12;
 var BULLET_LENGTH = 4;
+var SHIP_ACCEL = 1;
+var SHIP_TURN = Math.PI*2 / 100;
+
+var keystate = new Array();
+for (var i = 0; i < 255; i++) keystate[i] = false;
 
 window.requestAnimFrame = (function(){
     return window.requestAnimationFrame       || 
@@ -114,24 +119,37 @@ function Bullet(p, a, v) {
     
     this.points.push(new Vec2(0,BULLET_LENGTH/2));
     this.points.push(new Vec2(0,-BULLET_LENGTH/2));  
-    console.log(JSON.stringify(this.points));
 }
 
-var a = new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0));
-var s = new Ship(new Vec2(200,300), 3);
-var b = new Bullet(new Vec2(600, 300), Math.PI/4, new Vec2(0,0));
 
-g.fillStyle = "rgb(0,20,0)";
-g.fillRect(0, 0, canvas.width, canvas.height);
-a.draw(g);
-s.draw(g);
-b.draw(g);
+
+var game = (function () {
+    var a = new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0));
+    var s = new Ship(new Vec2(200,300), 3);
+    var b = new Bullet(new Vec2(600, 300), Math.PI/4, new Vec2(0,0));
+
+    g.fillStyle = "rgb(0,20,0)";
+    g.fillRect(0, 0, canvas.width, canvas.height);
+    a.draw(g);
+    s.draw(g);
+    b.draw(g);
+    
+    function tick () {
+        
+        
+        requestAnimFrame(tick);
+    };
+
+    return {tick: tick};
+})();
 
 $(document).ready(function () {
-    $(document).keyup(function () {
-        
+    $(document).keyup(function (e) {
+        keystate[e.which] = false;
     });
-    $(document).keydown(function () {
-        
+    $(document).keydown(function (e) {
+        keystate[e.which] = true;
     });
+
+    game.tick();
 });
