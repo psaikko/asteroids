@@ -2,6 +2,18 @@
 var canvas = $("#viewport").get(0);
 var g = canvas.getContext("2d");
 var ASTEROID_POINTS = 12;
+var BULLET_LENGTH = 4;
+
+window.requestAnimFrame = (function(){
+    return window.requestAnimationFrame       || 
+    window.webkitRequestAnimationFrame || 
+    window.mozRequestAnimationFrame    || 
+    window.oRequestAnimationFrame      || 
+    window.msRequestAnimationFrame     || 
+    function(callback, element){
+        window.setTimeout(callback, 1000 / 60);
+    };
+})();
 
 var keys = {
     up: 38,
@@ -100,16 +112,20 @@ function Bullet(p, a, v) {
     this.a = a;
     this.v = v;
     
-    this.points.push
+    this.points.push(new Vec2(0,BULLET_LENGTH/2));
+    this.points.push(new Vec2(0,-BULLET_LENGTH/2));  
+    console.log(JSON.stringify(this.points));
 }
 
 var a = new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0));
 var s = new Ship(new Vec2(200,300), 3);
+var b = new Bullet(new Vec2(600, 300), Math.PI/4, new Vec2(0,0));
 
 g.fillStyle = "rgb(0,20,0)";
 g.fillRect(0, 0, canvas.width, canvas.height);
 a.draw(g);
 s.draw(g);
+b.draw(g);
 
 $(document).ready(function () {
     $(document).keyup(function () {
