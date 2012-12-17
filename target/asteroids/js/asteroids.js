@@ -3,8 +3,9 @@ var canvas = $("#viewport").get(0);
 var g = canvas.getContext("2d");
 var ASTEROID_POINTS = 12;
 var BULLET_LENGTH = 4;
-var SHIP_ACCEL = 1;
+var SHIP_ACCEL = 0.1;
 var SHIP_TURN = Math.PI*2 / 100;
+var BULLET_SPEED = 2;
 
 var keystate = new Array();
 for (var i = 0; i < 255; i++) keystate[i] = false;
@@ -33,17 +34,17 @@ function Vec2(x, y) {
     this.x = x;
     this.y = y;
     
-    function plus(other) {
+    this.plus = function (other) {
         return new Vec2(this.x + other.x, this.y + other.y);
-    }
+    };
 
-    function minus(other) {
+    this.minus = function (other) {
         return new Vec2(this.x - other.x, this.y - other.y);
-    }
+    };
 
-    function cross(other) {
+    this.cross = function (other) {
         return this.x*other.y - this.y*other.x;
-    }
+    };
 }
 
 function intersects(v1,v2,v3,v4) {
@@ -58,10 +59,11 @@ function intersects(v1,v2,v3,v4) {
     return (Math.abs(t) < 1 && Math.abs(u) < 1);
 }
 
-function Drawable(p, a) {
+function GameObject(p, a, v) {
     this.points = new Array();
     this.p = p;
     this.a = a;
+    this.v = v;
     
     this.draw = function(g) {
         g.save();
@@ -76,11 +78,18 @@ function Drawable(p, a) {
         g.lineTo(this.points[0].x, this.points[0].y);
         g.stroke();
 
+        g.translate(this.p.x, this.p.y);
+        g.rotate(this.a);
+
         g.restore();
     };
+
+    this.update = function(g) {
+        this.p = this.p.plus(this.v);
+    }
 }
 
-Asteroid.prototype = new Drawable();
+Asteroid.prototype = new GameObject();
 Asteroid.constructor = Asteroid;
 function Asteroid(p, r, a, v) {
     this.p = p;
@@ -96,7 +105,7 @@ function Asteroid(p, r, a, v) {
     }
 };
 
-Ship.prototype = new Drawable();
+Ship.prototype = new GameObject();
 Ship.constructor = Ship;
 function Ship(p, lives) {
     this.p = p;
@@ -108,9 +117,17 @@ function Ship(p, lives) {
     this.points.push(new Vec2(5, 5));
     this.points.push(new Vec2(0, 0));
     this.points.push(new Vec2(-5, 5));
+    
+    this.thrust = function (amount) {
+        this.v = this.v.plus(new Vec2(amount*Math.sin(this.a), -amount*Math.cos(this.a)));
+    };
+
+    this.turn = function (amount) {
+        this.a = (this.a + amount) % (Math.PI * 2);
+    };
 }
 
-Bullet.prototype = new Drawable();
+Bullet.prototype = new GameObject();
 Bullet.constructor = Bullet;
 function Bullet(p, a, v) {
     this.p = p;
@@ -121,21 +138,60 @@ function Bullet(p, a, v) {
     this.points.push(new Vec2(0,-BULLET_LENGTH/2));  
 }
 
-
-
 var game = (function () {
-    var a = new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0));
-    var s = new Ship(new Vec2(200,300), 3);
-    var b = new Bullet(new Vec2(600, 300), Math.PI/4, new Vec2(0,0));
+    var ship = new Ship(new Vec2(200,300), 3);
 
-    g.fillStyle = "rgb(0,20,0)";
-    g.fillRect(0, 0, canvas.width, canvas.height);
-    a.draw(g);
-    s.draw(g);
-    b.draw(g);
+    var asteroids = new Array();
+    var bullets = new Array();
+    asteroids.push(new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0)));
+ 
+    
+    function handleInput() {
+        if (keystate[keys.up]) {
+            ship.thrust(SHIP_ACCEL);
+        }
+        if (keystate[keys.down]) {
+            ship.thrust(-SHIP_ACCEL);
+        }
+        if (keystate[keys.left]) {
+            ship.turn(-SHIP_TURN);
+        }
+        if (keystate[keys.right]) {
+            ship.turn(SHIP_TURN);
+        }
+        if (keystate[keys.space]) {
+            bullets.push(new Bullet(ship.p, ship.a, BULLET_SPEED));
+        }
+    }
+    
+    function draw() {
+        g.clearRect(0, 0, canvas.width, canvas.height);
+        g.fillStyle = "rgb(0,20,0)";
+        g.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ship.draw(g);
+        $.each(asteroids, function(i, asteroid) {
+            asteroid.draw(g);
+        });
+        $.each(bullets, function(i, bullet) {
+            bullet.draw(g);
+        });
+    };
+    
+    function update() {
+        ship.update();
+        $.each(asteroids, function(i, asteroid) {
+            //asteroid.update();
+        });
+        $.each(bullets, function(i, bullet) {
+            bullet.update();
+        });
+    };
     
     function tick () {
-        
+        handleInput();
+        draw();
+        update();
         
         requestAnimFrame(tick);
     };
