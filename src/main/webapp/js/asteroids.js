@@ -66,11 +66,13 @@ function GameObject(p, a, v) {
     this.v = v;
     
     this.draw = function(g) {
+       
         g.save();
         g.translate(this.p.x, this.p.y);
         g.rotate(this.a);
 
         g.strokeStyle = "rgb(255, 255, 255)";
+        g.beginPath();
         g.moveTo(this.points[0].x, this.points[0].y);
         for (var i = 1; i < this.points.length; i++) {
             g.lineTo(this.points[i].x, this.points[i].y);
@@ -78,15 +80,12 @@ function GameObject(p, a, v) {
         g.lineTo(this.points[0].x, this.points[0].y);
         g.stroke();
 
-        g.translate(this.p.x, this.p.y);
-        g.rotate(this.a);
-
         g.restore();
     };
 
     this.update = function(g) {
         this.p = this.p.plus(this.v);
-    }
+    };
 }
 
 Asteroid.prototype = new GameObject();
@@ -165,6 +164,7 @@ var game = (function () {
     }
     
     function draw() {
+        g.setTransform(1,0,0,1,0,0);
         g.clearRect(0, 0, canvas.width, canvas.height);
         g.fillStyle = "rgb(0,20,0)";
         g.fillRect(0, 0, canvas.width, canvas.height);
@@ -181,7 +181,7 @@ var game = (function () {
     function update() {
         ship.update();
         $.each(asteroids, function(i, asteroid) {
-            //asteroid.update();
+            asteroid.update();
         });
         $.each(bullets, function(i, bullet) {
             bullet.update();
