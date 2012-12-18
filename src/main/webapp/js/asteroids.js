@@ -34,7 +34,7 @@ var game = (function () {
 
     var asteroids = new Array();
     var bullets = new Array();
-    asteroids.push(new Asteroid(new Vec2(400, 300), 100, 0, new Vec2(0, 0)));
+    asteroids.push(new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0)));
  
     
     function handleInput() {
@@ -50,7 +50,7 @@ var game = (function () {
         if (keystate[keys.right]) {
             ship.turn(SHIP_TURN);
         }
-        if (keystate[keys.space]) {
+        if (keystate[keys.space] && !lastKeystate[keys.space]) {
             bullets.push(new Bullet(ship.p, ship.a, ship.v));
         }
         for (var i = 0; i < 255; i++) {
@@ -75,7 +75,7 @@ var game = (function () {
     };
     
     function update() {
-        ship.v = ship.v.mult(0.99);
+        ship.v = ship.v.multiply(0.99);
         ship.update();
         $.each(asteroids, function(i, asteroid) {
             asteroid.update();

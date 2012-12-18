@@ -2,11 +2,11 @@ function Vec2(x, y) {
     this.x = x;
     this.y = y;
     
-    this.plus = function (other) {
+    this.add = function (other) {
         return new Vec2(this.x + other.x, this.y + other.y);
     };
 
-    this.minus = function (other) {
+    this.subtract = function (other) {
         return new Vec2(this.x - other.x, this.y - other.y);
     };
 
@@ -14,7 +14,7 @@ function Vec2(x, y) {
         return this.x*other.y - this.y*other.x;
     };
 
-    this.mult = function (scalar) {
+    this.multiply=  function (scalar) {
         return new Vec2(this.x*scalar, this.y*scalar);
     };
 
@@ -23,7 +23,7 @@ function Vec2(x, y) {
         this.y = (this.y < ymin ? this.y + ymax : this.y) % ymax;
     };
 
-    this.len = function () {
+    this.magnitude = function () {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     };
 
@@ -35,13 +35,13 @@ function Vec2(x, y) {
 
 function intersects(v1,v2,v3,v4) {
     var p = v1;
-    var r = v2.minus(v1);
+    var r = v2.subtract(v1);
     var q = v3;
-    var s = v4.minus(v3);
+    var s = v4.subtract(v3);
     if (r.cross(s) === 0)
         return False;
-    var t = q.minus(p).cross(s) / r.cross(s);
-    var u = q.minus(p).cross(r) / r.cross(s);
+    var t = q.subtract(p).cross(s) / r.cross(s);
+    var u = q.subtract(p).cross(r) / r.cross(s);
     return (t > 0 && t < 1 && u > 0 && u < 1);
 }
 
@@ -69,17 +69,17 @@ function GameObject(p, a, v) {
     };
 
     this.update = function(g) {
-        this.p = this.p.plus(this.v);
+        this.p = this.p.add(this.v);
         this.p.wrap(0, 0, canvas.width, canvas.height);
     };
 
     this.collides = function(other) {
-        for (var i = 0; i < this.points.length - 1; i++) {
-            for (var j = 0; j < other.points.length - 1; j++) {
-                if (intersects(this.points[i].rotate(this.a).plus(this.p),
-                               this.points[i+1].rotate(this.a).plus(this.p), 
-                               other.points[j].rotate(other.a).plus(other.p), 
-                               other.points[j+1].rotate(other.a).plus(other.p)))
+        var points1 = this.points.map(function (point) {return point.rotate(this.a).add(this.p); }, this);
+        var points2 = other.points.map(function (point) {return point.rotate(other.a).add(other.p); });
+        
+        for (var i = 0; i < points1.length - 1; i++) {
+            for (var j = 0; j < points2.length - 1; j++) {
+                if (intersects(points1[i],points1[i+1],points2[j],points2[j+1]))
                     return true;
             }
         }
@@ -121,7 +121,7 @@ function Ship(p, lives) {
     this.points.push(new Vec2(0, -10));
     
     this.thrust = function (amount) {
-        this.v = this.v.plus(new Vec2(amount*Math.sin(this.a), -amount*Math.cos(this.a)));
+        this.v = this.v.add(new Vec2(amount*Math.sin(this.a), -amount*Math.cos(this.a)));
     };
 
     this.turn = function (amount) {
@@ -136,21 +136,23 @@ function Bullet(p, a, v) {
     this.a = a;
     this.v = new Vec2(Math.sin(a)*BULLET_SPEED, -Math.cos(a)*BULLET_SPEED);
     this.dist = BULLET_DISTANCE;
-    this.speed = this.v.len();
+    this.speed = this.v.magnitude();
     
     this.points = new Array();
-    this.points.push(new Vec2(BULLET_LENGTH*Math.sin(a),-BULLET_LENGTH*Math.cos(a)));
-    this.points.push(new Vec2(-BULLET_LENGTH*Math.sin(a),BULLET_LENGTH*Math.cos(a)));  
+    this.points.push(new Vec2(0, BULLET_LENGTH/2));
+    this.points.push(new Vec2(0, -BULLET_LENGTH/2));  
     
     this.draw = function(g) {            
         g.strokeStyle = "rgb(255, 255, 255)";
-        g.moveTo(this.points[0].x + this.p.x, this.points[0].y + this.p.y);
-        g.lineTo(this.points[1].x + this.p.x, this.points[1].y + this.p.y);
+        var tmp = this.points[0].rotate(this.a).add(this.p);
+        g.moveTo(tmp.x, tmp.y);
+        tmp = this.points[1].rotate(this.a).add(this.p);
+        g.lineTo(tmp.x, tmp.y);
     };
 
     this.update = function(g) {
         this.dist -= this.speed;
-        this.p = this.p.plus(this.v);
+        this.p = this.p.add(this.v);
         this.p.wrap(0, 0, canvas.width, canvas.height);
     };
 }
