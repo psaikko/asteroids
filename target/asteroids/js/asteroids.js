@@ -34,8 +34,21 @@ var game = (function () {
 
     var asteroids = new Array();
     var bullets = new Array();
-    asteroids.push(new Asteroid(new Vec2(400, 300), 50, 0, new Vec2(0, 0)));
- 
+
+    for (var i = 0; i < 10; i++) {
+        var x = 0;
+        var y = 0;
+        if (Math.random() > 0.5) {
+            y = Math.random() * canvas.height;
+            x = Math.random() > 0.5 ? 0 : canvas.width;
+        } else {
+            y = Math.random() > 0.5 ? 0 : canvas.height;
+            x = Math.random() * canvas.width;
+        }
+        
+        var d = Math.random() * 2 * Math.PI;
+        asteroids.push(new Asteroid(new Vec2(x, y), 50, 0, new Vec2(Math.sin(d), Math.cos(d))));
+    }
     
     function handleInput() {
         if (keystate[keys.up]) {
@@ -62,30 +75,39 @@ var game = (function () {
         g.fillStyle = "rgb(0,20,0)";
         g.fillRect(0, 0, canvas.width, canvas.height);
         
+        g.strokeStyle = "rgb(255, 255, 255)";
+        g.beginPath();
         ship.draw(g);
+        
         $.each(asteroids, function(i, asteroid) {
             asteroid.draw(g);
         });
-        g.beginPath();
+        
         $.each(bullets, function(i, bullet) {
             bullet.draw(g);
         });
+    
         g.stroke();
-        
     };
     
     function update() {
-        ship.v = ship.v.multiply(0.99);
         ship.update();
         $.each(asteroids, function(i, asteroid) {
             asteroid.update();
-        });
-        $.each(bullets, function(i, bullet) {
-            $.each(asteroids, function(i, asteroid) {
+            
+            $.each(bullets, function(i, bullet) {
                 if (bullet.collides(asteroid)) {
                     bullet.dist = -1;
+                    console.log("bullet hit");
                 }
             });
+        
+            if (asteroid.collides(ship)) {
+                console.log("ship hit");
+            }
+        });
+    
+        $.each(bullets, function(i, bullet) {    
             bullet.update();
         });
         bullets = bullets.filter(function(bullet) {return bullet.dist >= 0;});

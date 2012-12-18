@@ -45,37 +45,18 @@ function intersects(v1,v2,v3,v4) {
     return (t > 0 && t < 1 && u > 0 && u < 1);
 }
 
-function GameObject(p, a, v) {
-    this.points = new Array();
-    this.p = p;
-    this.a = a;
-    this.v = v;
-    
-    this.draw = function(g) {
-       
-        g.save();
-        g.translate(this.p.x, this.p.y);
-        g.rotate(this.a);
-
-        g.beginPath();
-        g.strokeStyle = "rgb(255, 255, 255)";
-        g.moveTo(this.points[0].x, this.points[0].y);
-        for (var i = 1; i < this.points.length; i++) {
-            g.lineTo(this.points[i].x, this.points[i].y);
-        }
-        g.stroke();
+GameObject = {   
+    draw: function(g) {    
+        var projected = this.points.map(this.project, this);
         
-        g.restore();
-    };
-
-    this.update = function(g) {
-        this.p = this.p.add(this.v);
-        this.p.wrap(0, 0, canvas.width, canvas.height);
-    };
-
-    this.collides = function(other) {
-        var points1 = this.points.map(function (point) {return point.rotate(this.a).add(this.p); }, this);
-        var points2 = other.points.map(function (point) {return point.rotate(other.a).add(other.p); });
+        g.moveTo(projected[0].x, projected[0].y);
+        for (var i = 1; i < projected.length; i++) {
+            g.lineTo(projected[i].x, projected[i].y);
+        }       
+    },
+    collides: function(other) {
+        var points1 = this.points.map(this.project, this);
+        var points2 = other.points.map(other.project, other);
         
         for (var i = 0; i < points1.length - 1; i++) {
             for (var j = 0; j < points2.length - 1; j++) {
@@ -84,11 +65,18 @@ function GameObject(p, a, v) {
             }
         }
         return false;
-    };
-}
+    },
+    update: function() {
+        this.p = this.p.add(this.v);
+        this.p.wrap(0, 0, canvas.width, canvas.height);
+    },
 
-Asteroid.prototype = new GameObject();
-Asteroid.constructor = Asteroid;
+    project: function(point) {
+        return point.rotate(this.a).add(this.p);
+    }
+};
+
+Asteroid.prototype = GameObject;
 function Asteroid(p, r, a, v) {
     this.p = p;
     this.r = r;
@@ -98,15 +86,14 @@ function Asteroid(p, r, a, v) {
     this.points = new Array();
     for (var i = 0; i < ASTEROID_POINTS; i++) {
         this.points.push(new Vec2(
-            r * Math.sin(i * 2 * Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3,
-            r * Math.cos(i * 2 * Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3
+            r * Math.sin(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3,
+            r * Math.cos(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3
         ));
     }
     this.points.push(this.points[0]);
 };
 
-Ship.prototype = new GameObject();
-Ship.constructor = Ship;
+Ship.prototype = GameObject;
 function Ship(p, lives) {
     this.p = p;
     this.a = 0;
@@ -127,32 +114,39 @@ function Ship(p, lives) {
     this.turn = function (amount) {
         this.a = (this.a + amount) % (Math.PI * 2);
     };
+
+    this.update = function(g) {
+        GameObject.update.call(this);
+        this.v = this.v.multiply(1-SHIP_SLOW);
+    };
 }
 
-Bullet.prototype = new GameObject();
-Bullet.constructor = Bullet;
+Bullet.prototype = GameObject;
 function Bullet(p, a, v) {
     this.p = p;
     this.a = a;
-    this.v = new Vec2(Math.sin(a)*BULLET_SPEED, -Math.cos(a)*BULLET_SPEED);
+    this.v = v.add(new Vec2(Math.sin(a)*BULLET_SPEED, -Math.cos(a)*BULLET_SPEED));
     this.dist = BULLET_DISTANCE;
     this.speed = this.v.magnitude();
     
     this.points = new Array();
     this.points.push(new Vec2(0, BULLET_LENGTH/2));
     this.points.push(new Vec2(0, -BULLET_LENGTH/2));  
-    
-    this.draw = function(g) {            
-        g.strokeStyle = "rgb(255, 255, 255)";
-        var tmp = this.points[0].rotate(this.a).add(this.p);
-        g.moveTo(tmp.x, tmp.y);
-        tmp = this.points[1].rotate(this.a).add(this.p);
-        g.lineTo(tmp.x, tmp.y);
-    };
 
     this.update = function(g) {
+        GameObject.update.call(this);
         this.dist -= this.speed;
-        this.p = this.p.add(this.v);
-        this.p.wrap(0, 0, canvas.width, canvas.height);
+    };
+
+    this.collides = function(other) {
+        var tail = this.project(this.points[0]);
+        var nextHead = this.project(this.points[1]).add(this.v);
+        var otherPoints = other.points.map(other.project, other);
+        
+        for (var i = 0; i < otherPoints.length - 1; i++) {
+            if (intersects(otherPoints[i],otherPoints[i+1],tail,nextHead))
+                return true;
+        }
+        return false;
     };
 }
