@@ -15,8 +15,7 @@ function Vec2(x, y) {
     };
 
     this.mult = function (scalar) {
-        this.x = this.x*scalar;
-        this.y = this.y*scalar;
+        return new Vec2(this.x*scalar, this.y*scalar);
     };
 
     this.wrap = function (xmin, ymin, xmax, ymax) {     
@@ -26,6 +25,11 @@ function Vec2(x, y) {
 
     this.len = function () {
         return Math.sqrt(this.x * this.x + this.y * this.y);
+    };
+
+    this.rotate = function (a) {
+        return new Vec2(this.x*Math.cos(a) - this.y*Math.sin(a),
+                        this.x*Math.sin(a) + this.y*Math.cos(a));
     };
 }
 
@@ -38,7 +42,7 @@ function intersects(v1,v2,v3,v4) {
         return False;
     var t = q.minus(p).cross(s) / r.cross(s);
     var u = q.minus(p).cross(r) / r.cross(s);
-    return (Math.abs(t) < 1 && Math.abs(u) < 1);
+    return (t > 0 && t < 1 && u > 0 && u < 1);
 }
 
 function GameObject(p, a, v) {
@@ -68,6 +72,19 @@ function GameObject(p, a, v) {
         this.p = this.p.plus(this.v);
         this.p.wrap(0, 0, canvas.width, canvas.height);
     };
+
+    this.collides = function(other) {
+        for (var i = 0; i < this.points.length - 1; i++) {
+            for (var j = 0; j < other.points.length - 1; j++) {
+                if (intersects(this.points[i].rotate(this.a).plus(this.p),
+                               this.points[i+1].rotate(this.a).plus(this.p), 
+                               other.points[j].rotate(other.a).plus(other.p), 
+                               other.points[j+1].rotate(other.a).plus(other.p)))
+                    return true;
+            }
+        }
+        return false;
+    };
 }
 
 Asteroid.prototype = new GameObject();
@@ -77,7 +94,8 @@ function Asteroid(p, r, a, v) {
     this.r = r;
     this.a = a;
     this.v = v;
-
+    
+    this.points = new Array();
     for (var i = 0; i < ASTEROID_POINTS; i++) {
         this.points.push(new Vec2(
             r * Math.sin(i * 2 * Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3,
@@ -95,6 +113,7 @@ function Ship(p, lives) {
     this.lives = lives;
     this.v = new Vec2(0,0);
     
+    this.points = new Array();
     this.points.push(new Vec2(0, -10));
     this.points.push(new Vec2(5, 5));
     this.points.push(new Vec2(0, 0));
@@ -115,13 +134,13 @@ Bullet.constructor = Bullet;
 function Bullet(p, a, v) {
     this.p = p;
     this.a = a;
-    this.v = v.plus(new Vec2(Math.sin(a)*BULLET_SPEED, -Math.cos(a)*BULLET_SPEED));
+    this.v = new Vec2(Math.sin(a)*BULLET_SPEED, -Math.cos(a)*BULLET_SPEED);
     this.dist = BULLET_DISTANCE;
     this.speed = this.v.len();
     
-    this.points.push(new Vec2(BULLET_LENGTH*Math.sin(a), BULLET_LENGTH*Math.cos(a)));
-    this.points.push(new Vec2(-BULLET_LENGTH*Math.sin(a),-BULLET_LENGTH*Math.cos(a)));  
-    
+    this.points = new Array();
+    this.points.push(new Vec2(BULLET_LENGTH*Math.sin(a),-BULLET_LENGTH*Math.cos(a)));
+    this.points.push(new Vec2(-BULLET_LENGTH*Math.sin(a),BULLET_LENGTH*Math.cos(a)));  
     
     this.draw = function(g) {            
         g.strokeStyle = "rgb(255, 255, 255)";
