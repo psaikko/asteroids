@@ -1,4 +1,6 @@
 var ASTEROID_POINTS = 12;
+var ASTEROID_HP = 4;
+var ASTEROID_VELOCITY = 1;
 
 var SHIP_ACCEL = 0.1;
 var SHIP_TURN = Math.PI*2 / 100;

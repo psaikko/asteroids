@@ -77,11 +77,12 @@ GameObject = {
 };
 
 Asteroid.prototype = GameObject;
-function Asteroid(p, r, a, v) {
+function Asteroid(p, r, a, v, hp) {
     this.p = p;
     this.r = r;
     this.a = a;
     this.v = v;
+    this.hp = hp;
     
     this.points = new Array();
     for (var i = 0; i < ASTEROID_POINTS; i++) {
