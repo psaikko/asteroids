@@ -45,7 +45,8 @@ var game = (function () {
             x = Math.random() * canvas.width;
         }     
         var d = Math.random() * 2 * Math.PI;
-        asteroids.push(new Asteroid(new Vec2(x, y), 50, 0, new Vec2(Math.sin(d), Math.cos(d)), 5));
+
+        asteroids.push(new Asteroid(new Vec2(x, y), ASTEROID_SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
     }
     
     function handleInput() {
@@ -91,13 +92,18 @@ var game = (function () {
     
     function update() {
         ship.update();
+        var fragments = new Array();
         $.each(asteroids, function(i, asteroid) {
             asteroid.update();
             
             $.each(bullets, function(i, bullet) {
                 if (bullet.collides(asteroid)) {
                     bullet.dist = -1;
-                    asteroid.hp--;
+                    asteroid.hp = asteroid.hp -1;
+                    if (asteroid.hp === 0 && asteroid.size > 0) {
+                        for (var i = 0; i < ASTEROID_FRAGMENTS[asteroid.size]; i++)
+                            fragments.push(new Asteroid(asteroid.p, asteroid.size-1, 0, asteroid.v.rotate((Math.random()*2-1)*2*Math.PI/4).multiply(Math.random()+1)));
+                    }
                 }
             });
         
@@ -108,6 +114,10 @@ var game = (function () {
     
         $.each(bullets, function(i, bullet) {    
             bullet.update();
+        });
+    
+        $.each(fragments, function(i, fragment) {    
+            asteroids.push(fragment);
         });
     
         bullets = bullets.filter(function(bullet) {return bullet.dist >= 0;});

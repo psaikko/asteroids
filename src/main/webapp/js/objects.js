@@ -77,18 +77,19 @@ GameObject = {
 };
 
 Asteroid.prototype = GameObject;
-function Asteroid(p, r, a, v, hp) {
+function Asteroid(p, size, a, v) {
     this.p = p;
-    this.r = r;
+    this.r = ASTEROID_RADIUS[size];
     this.a = a;
     this.v = v;
-    this.hp = hp;
+    this.size = size;
+    this.hp = ASTEROID_HP[size];
     
     this.points = new Array();
     for (var i = 0; i < ASTEROID_POINTS; i++) {
         this.points.push(new Vec2(
-            r * Math.sin(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3,
-            r * Math.cos(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * r / 3
+            this.r * Math.sin(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * this.r / 3,
+            this.r * Math.cos(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * this.r / 3
         ));
     }
     this.points.push(this.points[0]);
