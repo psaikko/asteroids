@@ -100,10 +100,6 @@ var game = (function () {
                 if (bullet.collides(asteroid)) {
                     bullet.dist = -1;
                     asteroid.hp = asteroid.hp -1;
-                    if (asteroid.hp === 0 && asteroid.size > 0) {
-                        for (var i = 0; i < ASTEROID_FRAGMENTS[asteroid.size]; i++)
-                            fragments.push(new Asteroid(asteroid.p, asteroid.size-1, 0, asteroid.v.rotate((Math.random()*2-1)*2*Math.PI/4).multiply(Math.random()+1)));
-                    }
                 }
             });
         
@@ -116,11 +112,10 @@ var game = (function () {
             bullet.update();
         });
     
-        $.each(fragments, function(i, fragment) {    
-            asteroids.push(fragment);
-        });
-    
         bullets = bullets.filter(function(bullet) {return bullet.dist >= 0;});
+        asteroids.filter(function (asteroid) {return asteroid.hp <= 0;})
+                 .map(function (destroyed) {return destroyed.createFragments();})
+                 .forEach(function (fragments) {asteroids = asteroids.concat(fragments);});
         asteroids = asteroids.filter(function(asteroid) {return asteroid.hp > 0;});
     };
     

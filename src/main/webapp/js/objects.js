@@ -70,7 +70,6 @@ GameObject = {
         this.p = this.p.add(this.v);
         this.p.wrap(0, 0, canvas.width, canvas.height);
     },
-
     project: function(point) {
         return point.rotate(this.a).add(this.p);
     }
@@ -86,13 +85,21 @@ function Asteroid(p, size, a, v) {
     this.hp = ASTEROID_HP[size];
     
     this.points = new Array();
-    for (var i = 0; i < ASTEROID_POINTS; i++) {
+    for (var i = 0; i < ASTEROID_POINTS[size]; i++) {
         this.points.push(new Vec2(
-            this.r * Math.sin(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * this.r / 3,
-            this.r * Math.cos(i * 2*Math.PI / ASTEROID_POINTS) + (1 - Math.random() * 2) * this.r / 3
+            this.r * Math.sin(i * 2*Math.PI / ASTEROID_POINTS[size]) + (1 - Math.random() * 2) * this.r / 4,
+            this.r * Math.cos(i * 2*Math.PI / ASTEROID_POINTS[size]) + (1 - Math.random() * 2) * this.r / 4
         ));
     }
     this.points.push(this.points[0]);
+    
+    this.createFragments = function() {
+        var fragments = new Array();
+        for (var i = 0; i < ASTEROID_FRAGMENTS[this.size]; i++)
+            fragments.push(new Asteroid(this.p, this.size-1, 0, this.v.rotate((Math.random()*2-1)*2*Math.PI/4).multiply(Math.random()+1)));
+        return fragments;
+    };
+    
 };
 
 Ship.prototype = GameObject;
