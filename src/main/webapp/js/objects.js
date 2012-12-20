@@ -31,6 +31,10 @@ function Vec2(x, y) {
         return new Vec2(this.x*Math.cos(a) - this.y*Math.sin(a),
                         this.x*Math.sin(a) + this.y*Math.cos(a));
     };
+
+    this.normalize = function () {
+        return this.multiply(1 / this.magnitude());
+    };
 }
 
 function intersects(v1,v2,v3,v4) {
@@ -99,8 +103,48 @@ function Asteroid(p, size, a, v) {
             fragments.push(new Asteroid(this.p, this.size-1, 0, this.v.rotate((Math.random()*2-1)*2*Math.PI/4).multiply(Math.random()+1)));
         return fragments;
     };
-    
 };
+
+function Explosion(obj) {
+    this.time = EXPLOSION_DURATION;
+    var debris = new Array();
+    var pts = obj.points;
+    for (var i = 0; i < pts.length - 1; i++) {
+        debris.push(new Particle(obj.p,
+                                 pts[i].add(pts[i+1]).normalize().add(obj.v),
+                                 pts.slice(i, i+2)));
+    }
+    for (var i = 0; i < EXPLOSION_PARTICLES; i++) {
+        var a = 2*Math.PI*Math.random();
+        var dir = new Vec2(Math.sin(a), Math.cos(a));
+        debris.push(new Particle(obj.p,
+                                 dir.multiply(Math.random()*EXPLOSION_ENERGY).add(obj.v),
+                                 [new Vec2(0,0), dir.multiply(2)]));
+    }
+
+    this.draw = function(g) {
+        debris.forEach(function (particle) { particle.draw(g); });
+    };
+
+    this.update = function() {
+        this.time--;
+        debris.forEach(function (particle) { particle.update(); });
+    };
+}
+
+Particle.prototype = GameObject;
+function Particle(p, v, points) {
+    this.p = p;
+    this.v = v;
+    this.a = 0;
+    this.points = points;
+    
+    this.draw = function(g) {
+        GameObject.draw.call(this, g);
+        g.moveTo(10, 10);
+        g.lineTo(20, 20);
+    };
+}
 
 Ship.prototype = GameObject;
 function Ship(p, lives) {
@@ -124,7 +168,7 @@ function Ship(p, lives) {
         this.a = (this.a + amount) % (Math.PI * 2);
     };
 
-    this.update = function(g) {
+    this.update = function() {
         GameObject.update.call(this);
         this.v = this.v.multiply(1-SHIP_SLOW);
     };
@@ -142,7 +186,7 @@ function Bullet(p, a, v) {
     this.points.push(new Vec2(0, BULLET_LENGTH/2));
     this.points.push(new Vec2(0, -BULLET_LENGTH/2));  
 
-    this.update = function(g) {
+    this.update = function() {
         GameObject.update.call(this);
         this.dist -= this.speed;
     };

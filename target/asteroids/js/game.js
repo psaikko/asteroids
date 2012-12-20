@@ -30,10 +30,11 @@ var keys = {
 };
 
 var game = (function () {
-    var ship = new Ship(new Vec2(200,300), 3);
+    var ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
 
     var asteroids = new Array();
     var bullets = new Array();
+    var explosions = new Array();
 
     for (var i = 0; i < 10; i++) {
         var x = 0; var y = 0;
@@ -87,6 +88,10 @@ var game = (function () {
             bullet.draw(g);
         });
     
+        $.each(explosions, function(i, explosion) {
+            explosion.draw(g);
+        });
+    
         g.stroke();
     };
     
@@ -104,19 +109,26 @@ var game = (function () {
             });
         
             if (asteroid.collides(ship)) {
-                console.log("ship hit");
+                explosions.push(new Explosion(ship));
+                ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
             }
         });
     
-        $.each(bullets, function(i, bullet) {    
+        $.each(bullets, function(i, bullet) {     
             bullet.update();
+        });
+    
+        $.each(explosions, function(i, explosion) {
+            explosion.update();
         });
     
         bullets = bullets.filter(function(bullet) {return bullet.dist >= 0;});
         asteroids.filter(function (asteroid) {return asteroid.hp <= 0;})
-                 .map(function (destroyed) {return destroyed.createFragments();})
+                 .map(function (destroyed) {explosions.push(new Explosion(destroyed));
+                                            return destroyed.createFragments();})
                  .forEach(function (fragments) {asteroids = asteroids.concat(fragments);});
         asteroids = asteroids.filter(function(asteroid) {return asteroid.hp > 0;});
+        explosions = explosions.filter(function(explosion) {return explosion.time > 0;});
     };
     
     function tick () {
