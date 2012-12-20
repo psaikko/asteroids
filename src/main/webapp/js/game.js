@@ -63,7 +63,7 @@ var game = (function () {
         if (keystate[keys.right]) {
             ship.turn(SHIP_TURN);
         }
-        if (keystate[keys.space] && !lastKeystate[keys.space]) {
+        if (keystate[keys.space] /*&& !lastKeystate[keys.space]*/) {
             bullets.push(new Bullet(ship.p, ship.a, ship.v));
         }
         if (keystate[keys.ctrl] && !lastKeystate[keys.ctrl]) {
@@ -109,8 +109,8 @@ var game = (function () {
             });
         
             if (asteroid.collides(ship)) {
-                explosions.push(new Explosion(ship));
-                ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
+                //explosions.push(new Explosion(ship));
+                //ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
             }
         });
     
