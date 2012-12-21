@@ -35,12 +35,7 @@ var game = (function () {
     var asteroids = new Array();
     var bullets = new Array();
     var explosions = new Array();
-
-    var letters = [];
-    for (var i = 0; i < 26; i++) {
-        letters.push(new Letter(String.fromCharCode(97 + i), 20+30*i, 30, 25, 40));
-    }
-    
+    var text = new Text("abcdefghijklmnopqrstuvwxyz1234567890", 10, 10, 15, 30);
 
     for (var i = 0; i < 10; i++) {
         var x = 0; var y = 0;
@@ -98,9 +93,7 @@ var game = (function () {
             explosion.draw(g);
         });
     
-        $.each(letters, function(i, letter) {
-            letter.draw(g);
-        });
+        text.draw(g);
     
         g.stroke();
     };

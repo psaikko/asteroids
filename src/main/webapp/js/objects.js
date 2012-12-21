@@ -197,7 +197,7 @@ function Ship(p, lives) {
             fire.a = this.a + Math.PI / 2;
             fire.draw(g);
         }
-    }
+    };
 }
 
 Bullet.prototype = GameObject;
