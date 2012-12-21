@@ -104,7 +104,6 @@ function Asteroid(p, size, a, v) {
         return fragments;
     };
 }
-;
 
 function Explosion(obj) {
     this.time = EXPLOSION_DURATION;
@@ -141,7 +140,7 @@ function Explosion(obj) {
         });
         debris = debris.filter(function(d) {
             return d.time > 0;
-        })
+        });
     };
 }
 
@@ -156,7 +155,7 @@ function Particle(p, v, points, time) {
     this.update = function() {
         this.time--;
         GameObject.update.call(this);
-    }
+    };
 }
 
 Ship.prototype = GameObject;
@@ -173,7 +172,11 @@ function Ship(p, lives) {
     this.points.push(new Vec2(-5, 5));
     this.points.push(new Vec2(0, -10));
 
+    var firePoints = [new Vec2(5,2),new Vec2(0,0),new Vec2(5,0),new Vec2(0,0), new Vec2(5,-2)];
+    var showFire = false;
+
     this.thrust = function(amount) {
+        if (Math.random() < SHIP_ENGINE_FLICKER) showFire = true;
         this.v = this.v.add(new Vec2(amount * Math.sin(this.a), -amount * Math.cos(this.a)));
     };
 
@@ -182,9 +185,19 @@ function Ship(p, lives) {
     };
 
     this.update = function() {
+        showFire = false;
         GameObject.update.call(this);
         this.v = this.v.multiply(1 - SHIP_SLOW);
     };
+
+    this.draw = function(g) {
+        GameObject.draw.call(this, g);
+        if (showFire) {
+            var fire = new Particle(this.p, null, firePoints, 0);
+            fire.a = this.a + Math.PI / 2;
+            fire.draw(g);
+        }
+    }
 }
 
 Bullet.prototype = GameObject;
