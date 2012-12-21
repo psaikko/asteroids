@@ -117,7 +117,7 @@ function Explosion(obj) {
         debris.push(new Particle(obj.p,
                 pts[i].add(pts[i + 1]).normalize().add(obj.v),
                 particlePoints,
-                Math.random() * 0.25 * EXPLOSION_DURATION));
+                Math.random() * EXPLOSION_DURATION));
     }
     for (var i = 0; i < EXPLOSION_PARTICLES; i++) {
         var a = 2 * Math.PI * Math.random();

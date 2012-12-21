@@ -36,6 +36,12 @@ var game = (function () {
     var bullets = new Array();
     var explosions = new Array();
 
+    var letters = [];
+    for (var i = 0; i < 26; i++) {
+        letters.push(new Letter(String.fromCharCode(97 + i), 20+30*i, 30, 25, 40));
+    }
+    
+
     for (var i = 0; i < 10; i++) {
         var x = 0; var y = 0;
         if (Math.random() > 0.5) {
@@ -90,6 +96,10 @@ var game = (function () {
     
         $.each(explosions, function(i, explosion) {
             explosion.draw(g);
+        });
+    
+        $.each(letters, function(i, letter) {
+            letter.draw(g);
         });
     
         g.stroke();
