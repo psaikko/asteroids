@@ -31,7 +31,7 @@ var keys = {
 
 function Game() {
     var score = 0;
-    var ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
+    var ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 15, 20, 3);
     var level;
 
     var engineSound = new Audio();

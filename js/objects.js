@@ -35,8 +35,9 @@ function intersects(p, p2, q, q2) {
     var rxs = r.cross(s);
     if (rxs === 0)
         return False;
-    var t = q.subtract(p).cross(s) / rxs;
-    var u = q.subtract(p).cross(r) / rxs;
+    var qsp = q.subtract(p);
+    var t = qsp.cross(s) / rxs;
+    var u = qsp.cross(r) / rxs;
     return (t > 0 && t < 1 && u > 0 && u < 1);
 }
 
@@ -148,19 +149,29 @@ function Particle(p, v, points, time) {
 }
 
 Ship.prototype = GameObject;
-function Ship(p, lives) {
+function Ship(p, w, h, lives) {
     this.p = p;
     this.a = 0;
     this.lives = lives;
     this.v = new Vec2(0, 0);
-    this.points = new Array();
-    this.points.push(new Vec2(0, -10));
-    this.points.push(new Vec2(5, 5));
-    this.points.push(new Vec2(0, 0));
-    this.points.push(new Vec2(-5, 5));
-    this.points.push(new Vec2(0, -10));
-    var firePoints = [new Vec2(5, 2), new Vec2(0, 0), new Vec2(5, 0), new Vec2(0, 0), new Vec2(5, -2)];
+    this.points = [new Vec2(0, -1), new Vec2(1, 1), new Vec2(-1, 1), new Vec2(0, -1)];
+
+    var model = [new Vec2(0, -1), new Vec2(1, 1),
+                 new Vec2(-1, 1), new Vec2(0, -1),
+                 new Vec2(-0.75, 0.5), new Vec2(0.75, 0.5)];
+    var firePoints = [new Vec2(-0.5, 0.5), new Vec2(0,1),
+                      new Vec2(0.5, 0.5), new Vec2(0,1)];
     var showFire = false;
+
+    var scale = function(point) {
+        point.x = point.x * w/2; 
+        point.y = point.y * h/2;
+    };
+
+    this.points.forEach(scale);
+    model.forEach(scale);
+    firePoints.forEach(scale);
+
     this.thrust = function(amount) {
         if (Math.random() < SHIP_ENGINE_FLICKER)
             showFire = true;
@@ -174,11 +185,16 @@ function Ship(p, lives) {
         GameObject.update.call(this);
         this.v = this.v.multiply(1 - SHIP_SLOW);
     };
+
     this.draw = function(g) {
-        GameObject.draw.call(this, g);
+        var projected = model.map(this.project, this);
+        for (var i = 0; i < projected.length; i += 2) {
+            g.moveTo(projected[i].x, projected[i].y);
+            g.lineTo(projected[i + 1].x, projected[i + 1].y);
+        }
         if (showFire) {
             var fire = new Particle(this.p, null, firePoints, 0);
-            fire.a = this.a + Math.PI / 2;
+            fire.a = this.a;
             fire.draw(g);
         }
     };
