@@ -152,13 +152,18 @@ function Character(char, x, y, w, h) {
 
 function Text(text, x, y, lw, lh) {
     var characters = new Array();
+
     for (var i = 0; i < text.length; i++) {
-        characters.push(new Character(text[i], x + lw / 2 + (lw * i * 1.2), y + lh / 2, lw, lh));
+        characters.push(new Character(text[i], x + lw / 2 + (lw * i * 1.3), y + lh / 2, lw, lh));
     }
+
     this.draw = function(g) {
         characters.forEach(function(char) {
             char.draw(g);
         });
     };
+}
 
+function textLength(text, lw) {
+    return lw*text.length*1.3;
 }

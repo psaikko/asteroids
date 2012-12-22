@@ -30,13 +30,12 @@ var keys = {
 };
 
 var game = (function () {
+    var score = 0;
     var ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
 
     var asteroids = new Array();
     var bullets = new Array();
     var explosions = new Array();
-    var text = new Text("abcdefghijklmnopqrstuvwxyz1234567890", 10, 10, 10, 20);
-
 
     var beatFrequency = BEAT_MAX;
     var beatCooldown = beatFrequency;
@@ -113,11 +112,21 @@ var game = (function () {
             explosion.draw(g);
         });
     
-        text.draw(g);
+        drawUI();
     
         g.stroke();
     };
     
+    function drawUI() {
+        var scoreString = score > 0 ? ""+score : "00";
+        var char_w = 15;
+        var char_h = 20;
+        var x = textLength("999999999", char_w) - textLength(scoreString, char_w);
+        var y = 10;
+        var scoreText = new Text(scoreString, x, y, char_w, char_h);
+        scoreText.draw(g);
+    }
+
     function update() {
         
         ship.update();
@@ -137,7 +146,7 @@ var game = (function () {
                             audio.play();
 
                             beatFrequency -= beat_delta;
-                            console.log(beatFrequency);
+                            score += ASTEROID_SCORE[asteroid.size];
                         }
                     }
                 }
