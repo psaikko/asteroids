@@ -29,40 +29,46 @@ var keys = {
     ctrl: 17
 };
 
-var game = (function () {
+function Game() {
     var score = 0;
     var ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
-
-    var asteroids = new Array();
-    var bullets = new Array();
-    var explosions = new Array();
-
-    var beatFrequency = BEAT_MAX;
-    var beatCooldown = beatFrequency;
-    var beatNum = 0;
+    var level;
 
     var engineSound = new Audio();
     engineSound.src = "audio/engine.wav";
     engineSound.volume = 0.5;
     var engineSoundCooldown = 0;
 
-    var asteroid_count = 3;
-    var total_asteroids = asteroid_count*7;
-    var beat_delta = (BEAT_MAX - BEAT_MIN) / (total_asteroids - 1);
+    var asteroids; var bullets; var explosions;
+    var beatFrequency; var beatCooldown; var beatNum; var beat_delta;
 
-    for (var i = 0; i < 3; i++) {
-        var x = 0; var y = 0;
-        if (Math.random() > 0.5) {
-            y = Math.random() * canvas.height;
-            x = Math.random() > 0.5 ? 0 : canvas.width;
-        } else {
-            y = Math.random() > 0.5 ? 0 : canvas.height;
-            x = Math.random() * canvas.width;
-        }     
-        var d = Math.random() * 2 * Math.PI;
+    function initLevel(lvl) {
+        level = lvl;
+        asteroids = new Array();
+        bullets = new Array();
+        explosions = new Array();
 
-        asteroids.push(new Asteroid(new Vec2(x, y), ASTEROID_SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
-    }
+        beatFrequency = BEAT_MAX;
+        beatCooldown = beatFrequency;
+        beatNum = 0;
+
+        var asteroid_count = ASTEROID_MIN_COUNT + level;
+        beat_delta = (BEAT_MAX - BEAT_MIN) / (asteroid_count*7 - 1);
+
+        for (var i = 0; i < asteroid_count; i++) {
+            var x = 0; var y = 0;
+            if (Math.random() > 0.5) {
+                y = Math.random() * canvas.height;
+                x = Math.random() > 0.5 ? 0 : canvas.width;
+            } else {
+                y = Math.random() > 0.5 ? 0 : canvas.height;
+                x = Math.random() * canvas.width;
+            }     
+            var d = Math.random() * 2 * Math.PI;
+
+            asteroids.push(new Asteroid(new Vec2(x, y), ASTEROID_SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
+        }
+    }  
     
     function handleInput() {
         if (keystate[keys.up]) {
@@ -128,7 +134,17 @@ var game = (function () {
     }
 
     function update() {
-        
+        if (asteroids.length && beatCooldown++ > beatFrequency) {
+            var src = "audio/beat"+(beatNum+1)+".wav";
+            var audio = new Audio();
+            audio.src = src;
+            audio.volume = 0.4;
+            audio.play();
+
+            beatNum = (beatNum + 1) % 2;
+            beatCooldown = 0;
+        }
+
         ship.update();
         var fragments = new Array();
         $.each(asteroids, function(i, asteroid) {
@@ -151,11 +167,6 @@ var game = (function () {
                     }
                 }
             });
-        
-            if (asteroid.collides(ship)) {
-                //explosions.push(new Explosion(ship));
-                //ship = new Ship(new Vec2(canvas.width / 2, canvas.height / 2), 3);
-            }
         });
     
         $.each(bullets, function(i, bullet) {     
@@ -173,31 +184,24 @@ var game = (function () {
                  .forEach(function (fragments) {asteroids = asteroids.concat(fragments);});
         asteroids = asteroids.filter(function(asteroid) {return asteroid.hp > 0;});
         explosions = explosions.filter(function(explosion) {return explosion.time > 0;});
+
+        if (asteroids.length == 0) {
+            initLevel(level + 1);
+        }
     };
     
     function tick () {
-        if (asteroids.length && beatCooldown++ > beatFrequency) {
-            //beat[beatNum].play();
-            var src = "audio/beat"+(beatNum+1)+".wav";
-            var audio = new Audio();
-            audio.src = src;
-            audio.volume = 0.4;
-            audio.play();
-
-            beatNum = (beatNum + 1) % 2;
-            beatCooldown = 0;
-        }
-
-
         handleInput();
         draw();
         update();
-        
         requestAnimFrame(tick);
     };
 
-    return {tick: tick};
-})();
+    this.start = function () { 
+        initLevel(0);
+        tick();
+    };
+}
 
 $(document).ready(function () {
     $(document).keyup(function (e) {
@@ -207,5 +211,6 @@ $(document).ready(function () {
         keystate[e.which] = true;
     });
 
-    game.tick();
+    var game = new Game();
+    game.start();
 });

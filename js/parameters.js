@@ -5,6 +5,8 @@ var ASTEROID_RADIUS = [10,20,50];
 var ASTEROID_HP = [1,1,1];
 var ASTEROID_FRAGMENTS = [0, 2, 2];
 var ASTEROID_SCORE = [100, 50, 20];
+var ASTEROID_MIN_COUNT = 3;
+var ASTEROID_MAX_COUNT = 12;
 
 var SHIP_ACCEL = 0.15;
 var SHIP_TURN = Math.PI*2 / 60;
@@ -22,3 +24,4 @@ var EXPLOSION_DURATION = [20, 30, 40];
 
 var BEAT_MAX = 100;
 var BEAT_MIN = 5;
+
