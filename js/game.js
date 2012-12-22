@@ -55,9 +55,6 @@ var game = (function () {
         if (keystate[keys.up]) {
             ship.thrust(SHIP_ACCEL);
         }
-        if (keystate[keys.down]) {
-            ship.thrust(-SHIP_ACCEL);
-        }
         if (keystate[keys.left]) {
             ship.turn(-SHIP_TURN);
         }
@@ -68,7 +65,7 @@ var game = (function () {
             bullets.push(new Bullet(ship.p, ship.a, ship.v));
         }
         if (keystate[keys.ctrl] && !lastKeystate[keys.ctrl]) {
-            bullets.push(new Bullet(ship.p, ship.a, ship.v));
+            ship.p = new Vec2(Math.random()*canvas.width, Math.random()*canvas.height);
         }
         lastKeystate = keystate.slice();
     }
