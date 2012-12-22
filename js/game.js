@@ -106,7 +106,7 @@ var game = (function () {
             asteroid.update();
             
             $.each(bullets, function(i, bullet) {
-                if (bullet.p.subtract(asteroid.p).magnitude() < 1*asteroid.r) {
+                if (bullet.p.subtract(asteroid.p).magnitude() <2*asteroid.r) {
                     if (bullet.collides(asteroid)) {
                         bullet.dist = -1;
                         asteroid.hp = asteroid.hp -1;
