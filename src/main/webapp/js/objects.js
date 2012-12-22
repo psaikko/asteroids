@@ -1,58 +1,48 @@
 function Vec2(x, y) {
     this.x = x;
     this.y = y;
-
     this.add = function(other) {
         return new Vec2(this.x + other.x, this.y + other.y);
     };
-
     this.subtract = function(other) {
         return new Vec2(this.x - other.x, this.y - other.y);
     };
-
     this.cross = function(other) {
         return this.x * other.y - this.y * other.x;
     };
-
     this.multiply = function(scalar) {
         return new Vec2(this.x * scalar, this.y * scalar);
     };
-
     this.wrap = function(xmin, ymin, xmax, ymax) {
         this.x = (this.x < xmin ? this.x + xmax : this.x) % xmax;
         this.y = (this.y < ymin ? this.y + ymax : this.y) % ymax;
     };
-
     this.magnitude = function() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     };
-
     this.rotate = function(a) {
         return new Vec2(this.x * Math.cos(a) - this.y * Math.sin(a),
                 this.x * Math.sin(a) + this.y * Math.cos(a));
     };
-
     this.normalize = function() {
         return this.multiply(1 / this.magnitude());
     };
 }
 
-function intersects(v1, v2, v3, v4) {
-    var p = v1;
-    var r = v2.subtract(v1);
-    var q = v3;
-    var s = v4.subtract(v3);
-    if (r.cross(s) === 0)
+function intersects(p, p2, q, q2) {
+    var r = p2.subtract(p);
+    var s = q2.subtract(q);
+    var rxs = r.cross(s);
+    if (rxs === 0)
         return False;
-    var t = q.subtract(p).cross(s) / r.cross(s);
-    var u = q.subtract(p).cross(r) / r.cross(s);
+    var t = q.subtract(p).cross(s) / rxs;
+    var u = q.subtract(p).cross(r) / rxs;
     return (t > 0 && t < 1 && u > 0 && u < 1);
 }
 
 GameObject = {
     draw: function(g) {
         var projected = this.points.map(this.project, this);
-
         g.moveTo(projected[0].x, projected[0].y);
         for (var i = 1; i < projected.length; i++) {
             g.lineTo(projected[i].x, projected[i].y);
@@ -61,7 +51,6 @@ GameObject = {
     collides: function(other) {
         var points1 = this.points.map(this.project, this);
         var points2 = other.points.map(other.project, other);
-
         for (var i = 0; i < points1.length - 1; i++) {
             for (var j = 0; j < points2.length - 1; j++) {
                 if (intersects(points1[i], points1[i + 1], points2[j], points2[j + 1]))
@@ -78,7 +67,6 @@ GameObject = {
         return point.rotate(this.a).add(this.p);
     }
 };
-
 Asteroid.prototype = GameObject;
 function Asteroid(p, size, a, v) {
     this.p = p;
@@ -87,7 +75,6 @@ function Asteroid(p, size, a, v) {
     this.v = v;
     this.size = size;
     this.hp = ASTEROID_HP[size];
-
     this.points = new Array();
     for (var i = 0; i < ASTEROID_POINTS[size]; i++) {
         this.points.push(new Vec2(
@@ -96,7 +83,6 @@ function Asteroid(p, size, a, v) {
                 ));
     }
     this.points.push(this.points[0]);
-
     this.createFragments = function() {
         var fragments = new Array();
         for (var i = 0; i < ASTEROID_FRAGMENTS[this.size]; i++)
@@ -106,33 +92,37 @@ function Asteroid(p, size, a, v) {
 }
 
 function Explosion(obj) {
-    this.time = EXPLOSION_DURATION;
+    this.time = EXPLOSION_DURATION[obj.size];
     var debris = new Array();
+    /*
     var pts = obj.points;
     for (var i = 0; i < pts.length - 1; i++) {
-        var particlePoints = pts.slice(i, i + 2);
-        particlePoints.push(particlePoints[0].add(particlePoints[1]).multiply(1/3));
-        particlePoints.push(particlePoints[0]);
+        var ppts = pts.slice(i, i + 2);
+        ppts.push(ppts[0].add(ppts[1]).multiply(1 / 3));
+        ppts.push(ppts[0]);
         debris.push(new Particle(obj.p,
-                pts[i].add(pts[i + 1]).normalize().add(obj.v),
-                particlePoints,
+                ppts[0].add(ppts[1]).normalize().add(obj.v),
+                ppts,
                 Math.random() * EXPLOSION_DURATION));
     }
-    for (var i = 0; i < EXPLOSION_PARTICLES; i++) {
+*/
+    for (var i = 0; i < EXPLOSION_PARTICLES[obj.size]; i++) {
         var a = 2 * Math.PI * Math.random();
         var dir = new Vec2(Math.sin(a), Math.cos(a));
-        debris.push(new Particle(obj.p,
-                dir.multiply(Math.random() * EXPLOSION_ENERGY).add(obj.v),
+        debris.push(new Particle(obj.p.add(dir.multiply(obj.r*Math.random())),
+                dir.multiply(Math.random() * EXPLOSION_ENERGY[obj.size]).add(obj.v),
                 [new Vec2(0, 0), dir.multiply(2)],
-                Math.random() * EXPLOSION_DURATION));
+                Math.random() * EXPLOSION_DURATION[obj.size]));
     }
 
+    this.getDebris = function() {
+        return debris;
+    };
     this.draw = function(g) {
         debris.forEach(function(particle) {
             particle.draw(g);
         });
     };
-
     this.update = function() {
         this.time--;
         debris.forEach(function(particle) {
@@ -151,7 +141,6 @@ function Particle(p, v, points, time) {
     this.a = 0;
     this.points = points;
     this.time = time;
-
     this.update = function() {
         this.time--;
         GameObject.update.call(this);
@@ -164,32 +153,27 @@ function Ship(p, lives) {
     this.a = 0;
     this.lives = lives;
     this.v = new Vec2(0, 0);
-
     this.points = new Array();
     this.points.push(new Vec2(0, -10));
     this.points.push(new Vec2(5, 5));
     this.points.push(new Vec2(0, 0));
     this.points.push(new Vec2(-5, 5));
     this.points.push(new Vec2(0, -10));
-
-    var firePoints = [new Vec2(5,2),new Vec2(0,0),new Vec2(5,0),new Vec2(0,0), new Vec2(5,-2)];
+    var firePoints = [new Vec2(5, 2), new Vec2(0, 0), new Vec2(5, 0), new Vec2(0, 0), new Vec2(5, -2)];
     var showFire = false;
-
     this.thrust = function(amount) {
-        if (Math.random() < SHIP_ENGINE_FLICKER) showFire = true;
+        if (Math.random() < SHIP_ENGINE_FLICKER)
+            showFire = true;
         this.v = this.v.add(new Vec2(amount * Math.sin(this.a), -amount * Math.cos(this.a)));
     };
-
     this.turn = function(amount) {
         this.a = (this.a + amount) % (Math.PI * 2);
     };
-
     this.update = function() {
         showFire = false;
         GameObject.update.call(this);
         this.v = this.v.multiply(1 - SHIP_SLOW);
     };
-
     this.draw = function(g) {
         GameObject.draw.call(this, g);
         if (showFire) {
@@ -207,21 +191,17 @@ function Bullet(p, a, v) {
     this.v = v.add(new Vec2(Math.sin(a) * BULLET_SPEED, -Math.cos(a) * BULLET_SPEED));
     this.dist = BULLET_DISTANCE;
     this.speed = this.v.magnitude();
-
     this.points = new Array();
     this.points.push(new Vec2(0, BULLET_LENGTH / 2));
     this.points.push(new Vec2(0, -BULLET_LENGTH / 2));
-
     this.update = function() {
         GameObject.update.call(this);
         this.dist -= this.speed;
     };
-
     this.collides = function(other) {
         var tail = this.project(this.points[0]);
         var nextHead = this.project(this.points[1]).add(this.v);
         var otherPoints = other.points.map(other.project, other);
-
         for (var i = 0; i < otherPoints.length - 1; i++) {
             if (intersects(otherPoints[i], otherPoints[i + 1], tail, nextHead))
                 return true;

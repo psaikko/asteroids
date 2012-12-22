@@ -35,7 +35,7 @@ var game = (function () {
     var asteroids = new Array();
     var bullets = new Array();
     var explosions = new Array();
-    var text = new Text("abcdefghijklmnopqrstuvwxyz1234567890", 10, 10, 15, 30);
+    var text = new Text("abcdefghijklmnopqrstuvwxyz1234567890", 10, 10, 10, 20);
 
     for (var i = 0; i < 10; i++) {
         var x = 0; var y = 0;
@@ -64,7 +64,7 @@ var game = (function () {
         if (keystate[keys.right]) {
             ship.turn(SHIP_TURN);
         }
-        if (keystate[keys.space] /*&& !lastKeystate[keys.space]*/) {
+        if (keystate[keys.space] && !lastKeystate[keys.space]) {
             bullets.push(new Bullet(ship.p, ship.a, ship.v));
         }
         if (keystate[keys.ctrl] && !lastKeystate[keys.ctrl]) {
@@ -99,6 +99,7 @@ var game = (function () {
     };
     
     function update() {
+        
         ship.update();
         var fragments = new Array();
         $.each(asteroids, function(i, asteroid) {
