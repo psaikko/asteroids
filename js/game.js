@@ -37,7 +37,21 @@ var game = (function () {
     var explosions = new Array();
     var text = new Text("abcdefghijklmnopqrstuvwxyz1234567890", 10, 10, 10, 20);
 
-    for (var i = 0; i < 10; i++) {
+
+    var beatFrequency = BEAT_MAX;
+    var beatCooldown = beatFrequency;
+    var beatNum = 0;
+
+    var engineSound = new Audio();
+    engineSound.src = "audio/engine.wav";
+    engineSound.volume = 0.5;
+    var engineSoundCooldown = 0;
+
+    var asteroid_count = 3;
+    var total_asteroids = asteroid_count*7;
+    var beat_delta = (BEAT_MAX - BEAT_MIN) / (total_asteroids - 1);
+
+    for (var i = 0; i < 3; i++) {
         var x = 0; var y = 0;
         if (Math.random() > 0.5) {
             y = Math.random() * canvas.height;
@@ -53,6 +67,10 @@ var game = (function () {
     
     function handleInput() {
         if (keystate[keys.up]) {
+            if (engineSoundCooldown++ > 3) {
+                engineSoundCooldown = 0;
+                engineSound.play();
+            }   
             ship.thrust(SHIP_ACCEL);
         }
         if (keystate[keys.left]) {
@@ -62,7 +80,12 @@ var game = (function () {
             ship.turn(SHIP_TURN);
         }
         if (keystate[keys.space] && !lastKeystate[keys.space]) {
-            bullets.push(new Bullet(ship.p, ship.a, ship.v));
+            if (bullets.length < BULLET_COUNT) {
+                var audio = new Audio();
+                audio.src = "audio/fire.wav";
+                audio.play();
+                bullets.push(new Bullet(ship.p, ship.a, ship.v));
+            }
         }
         if (keystate[keys.ctrl] && !lastKeystate[keys.ctrl]) {
             ship.p = new Vec2(Math.random()*canvas.width, Math.random()*canvas.height);
@@ -107,6 +130,15 @@ var game = (function () {
                     if (bullet.collides(asteroid)) {
                         bullet.dist = -1;
                         asteroid.hp = asteroid.hp -1;
+                        if (asteroid.hp == 0) {
+                            var audio = new Audio();
+                            audio.src = "audio/explosion.wav";
+                            audio.volume = 0.5;
+                            audio.play();
+
+                            beatFrequency -= beat_delta;
+                            console.log(beatFrequency);
+                        }
                     }
                 }
             });
@@ -135,6 +167,19 @@ var game = (function () {
     };
     
     function tick () {
+        if (asteroids.length && beatCooldown++ > beatFrequency) {
+            //beat[beatNum].play();
+            var src = "audio/beat"+(beatNum+1)+".wav";
+            var audio = new Audio();
+            audio.src = src;
+            audio.volume = 0.4;
+            audio.play();
+
+            beatNum = (beatNum + 1) % 2;
+            beatCooldown = 0;
+        }
+
+
         handleInput();
         draw();
         update();
