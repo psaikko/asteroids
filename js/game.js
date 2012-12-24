@@ -52,10 +52,14 @@ asteroids_game.keys = new (function () {
 
 asteroids_game.engine = new (function () {
     var g = $("#viewport").get(0).getContext("2d");
+    // 'imports'
     var keys = asteroids_game.keys;
     var Ship = asteroids_game.objects.Ship;
     var Asteroid = asteroids_game.objects.Asteroid;
     var Vec2 = asteroids_game.objects.Vec2;
+    var Text = asteroids_game.text.Text;
+    var textLength = asteroids_game.text.textLength;
+    var CFG = asteroids_game.config;
 
     var end = false;
     var score = 0;
@@ -70,12 +74,12 @@ asteroids_game.engine = new (function () {
         asteroids = new Array();
         explosions = new Array();
 
-        beatFrequency = BEAT_MAX;
+        beatFrequency = CFG.AUDIO.BEAT_MAX;
         beatCooldown = beatFrequency;
         beatNum = 0;
 
-        var asteroid_count = ASTEROID_MIN_COUNT + level;
-        beat_delta = (BEAT_MAX - BEAT_MIN) / (asteroid_count*7 - 1);
+        var asteroid_count = CFG.ASTEROID.MIN_COUNT + level;
+        beat_delta = (CFG.AUDIO.BEAT_MAX - CFG.AUDIO.BEAT_MIN) / (asteroid_count*7 - 1);
 
         for (var i = 0; i < asteroid_count; i++) {
             var x = 0; var y = 0;
@@ -88,19 +92,19 @@ asteroids_game.engine = new (function () {
             }     
             var d = Math.random() * 2 * Math.PI;
 
-            asteroids.push(new Asteroid(new Vec2(x, y), ASTEROID_SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
+            asteroids.push(new Asteroid(new Vec2(x, y), CFG.ASTEROID.SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
         }
     }  
     
     function handleInput() {
         if (keys.state[keys.up]) {
-            ship.thrust(SHIP_ACCEL);
+            ship.thrust(CFG.SHIP.ACCELERATION);
         }
         if (keys.state[keys.left]) {
-            ship.turn(-SHIP_TURN);
+            ship.turn(-CFG.SHIP.TURNRATE);
         }
         if (keys.state[keys.right]) {
-            ship.turn(SHIP_TURN);
+            ship.turn(CFG.SHIP.TURNRATE);
         }
         if (keys.state[keys.space] && !keys.lastState[keys.space]) {
             ship.fire();
@@ -185,7 +189,7 @@ asteroids_game.engine = new (function () {
                     audio.play();
 
                     beatFrequency -= beat_delta;
-                    score += ASTEROID_SCORE[destroyed.size];
+                    score += CFG.ASTEROID.SCORE[destroyed.size];
                     explosions.push(destroyed.createExplosion());
                     return destroyed.createFragments()
                 ;})

@@ -2,6 +2,7 @@ var asteroids_game = asteroids_game || {};
 
 asteroids_game.objects = (function () {
     var canvas = $("#viewport").get(0);
+    var CFG = asteroids_game.config;
 
     function Vec2(x, y) {
         this.x = x;
@@ -87,39 +88,39 @@ asteroids_game.objects = (function () {
     Asteroid.prototype = GameObject;
     function Asteroid(p, size, a, v) {
         this.p = p;
-        this.r = ASTEROID_RADIUS[size];
+        this.r = CFG.ASTEROID.RADIUS[size];
         this.a = a;
         this.v = v;
         this.size = size;
         this.points = new Array();
 
-        for (var i = 0; i < ASTEROID_POINTS[size]; i++) {
+        for (var i = 0; i < CFG.ASTEROID.POINTS[size]; i++) {
             this.points.push(new Vec2(
-                    this.r * Math.sin(i * 2 * Math.PI / ASTEROID_POINTS[size]) + (1 - Math.random() * 2) * this.r / 4,
-                    this.r * Math.cos(i * 2 * Math.PI / ASTEROID_POINTS[size]) + (1 - Math.random() * 2) * this.r / 4
+                    this.r * Math.sin(i * 2 * Math.PI / CFG.ASTEROID.POINTS[size]) + (1 - Math.random() * 2) * this.r / 4,
+                    this.r * Math.cos(i * 2 * Math.PI / CFG.ASTEROID.POINTS[size]) + (1 - Math.random() * 2) * this.r / 4
                     ));
         }
         this.points.push(this.points[0]);
 
         this.createFragments = function() {
             var fragments = new Array();
-            for (var i = 0; i < ASTEROID_FRAGMENTS[this.size]; i++)
+            for (var i = 0; i < CFG.ASTEROID.FRAGMENTS[this.size]; i++)
                 fragments.push(new Asteroid(this.p, this.size - 1, 0, this.v.rotate((Math.random() * 2 - 1) * 2 * Math.PI / 4).multiply(Math.random() + 1)));
             return fragments;
         };
     }
 
     function Explosion(obj) {
-        var time = EXPLOSION_DURATION[obj.size];
+        var time = CFG.EXPLOSION.DURATION[obj.size];
         var debris = new Array();
 
-        for (var i = 0; i < EXPLOSION_PARTICLES[obj.size]; i++) {
+        for (var i = 0; i < CFG.EXPLOSION.PARTICLES[obj.size]; i++) {
             var a = 2 * Math.PI * Math.random();
             var dir = new Vec2(Math.sin(a), Math.cos(a));
             debris.push(new Particle(obj.p.add(dir.multiply(obj.r*Math.random())),
-                    dir.multiply(Math.random() * EXPLOSION_ENERGY[obj.size]).add(obj.v),
+                    dir.multiply(Math.random() * CFG.EXPLOSION.ENERGY[obj.size]).add(obj.v),
                     [new Vec2(0, 0), dir.multiply(2)],
-                    Math.random() * EXPLOSION_DURATION[obj.size]));
+                    Math.random() * CFG.EXPLOSION.DURATION[obj.size]));
         }
 
         this.getDebris = function() {
@@ -202,7 +203,7 @@ asteroids_game.objects = (function () {
         };
 
         this.fire = function() {
-            if (this.bullets.length < BULLET_COUNT) {
+            if (this.bullets.length < CFG.BULLET.COUNT) {
                 var audio = new Audio();
                 audio.src = "audio/fire.wav";
                 audio.play();
@@ -213,7 +214,7 @@ asteroids_game.objects = (function () {
         this.update = function() {
             showFire = false;
             GameObject.update.call(this);
-            this.v = this.v.multiply(1 - SHIP_SLOW);
+            this.v = this.v.multiply(1 - CFG.SHIP.SLOWDOWN);
 
             this.bullets.forEach(function (bullet) { bullet.update(); });
             this.bullets = this.bullets.filter(function(bullet) { return bullet.isAlive(); });
@@ -238,11 +239,11 @@ asteroids_game.objects = (function () {
     function Bullet(p, a, v) {
         this.p = p;
         this.a = a;
-        this.v = v.add(new Vec2(Math.sin(a) * BULLET_SPEED, -Math.cos(a) * BULLET_SPEED));
+        this.v = v.add(new Vec2(Math.sin(a) * CFG.BULLET.SPEED, -Math.cos(a) * CFG.BULLET.SPEED));
         this.speed = this.v.magnitude();
         this.points = new Array();
-        this.points.push(new Vec2(0, BULLET_LENGTH / 2));
-        this.points.push(new Vec2(0, -BULLET_LENGTH / 2));
+        this.points.push(new Vec2(0, CFG.BULLET.LENGTH / 2));
+        this.points.push(new Vec2(0, -CFG.BULLET.LENGTH / 2));
         var dist = 0;
 
         this.update = function() {
@@ -262,7 +263,7 @@ asteroids_game.objects = (function () {
         };
 
         this.isAlive = function() {
-            return GameObject.isAlive.call(this) && dist < BULLET_DISTANCE;
+            return GameObject.isAlive.call(this) && dist < CFG.BULLET.DISTANCE;
         };
     }
 
