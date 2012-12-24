@@ -1,4 +1,4 @@
-letters = {
+letterPoints = {
     a: [-1, -1, -1, 0.2,
         -1, 0.2, 0, 1,
         0, 1, 1, 0.2,
@@ -140,7 +140,7 @@ letters = {
 };
 
 function Character(char, x, y, w, h) {
-    var pts = letters[char];
+    var pts = letterPoints[char];
 
     this.draw = function(g) {
         for (var i = 0; i < pts.length; i += 4) {

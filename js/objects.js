@@ -42,6 +42,13 @@ function intersects(p, p2, q, q2) {
 }
 
 GameObject = {
+    killed: false,
+    kill: function() {
+        this.killed = true;
+    },
+    isAlive: function() {
+        return !this.killed;
+    },
     draw: function(g) {
         var projected = this.points.map(this.project, this);
         g.moveTo(projected[0].x, projected[0].y);
@@ -62,7 +69,7 @@ GameObject = {
     },
     update: function() {
         this.p = this.p.add(this.v);
-        this.p.wrap(0, 0, canvas.width, canvas.height);
+        this.p.wrap(0, 0, g.canvas.width, g.canvas.height);
     },
     project: function(point) {
         return point.rotate(this.a).add(this.p);
@@ -75,8 +82,8 @@ function Asteroid(p, size, a, v) {
     this.a = a;
     this.v = v;
     this.size = size;
-    this.hp = ASTEROID_HP[size];
     this.points = new Array();
+
     for (var i = 0; i < ASTEROID_POINTS[size]; i++) {
         this.points.push(new Vec2(
                 this.r * Math.sin(i * 2 * Math.PI / ASTEROID_POINTS[size]) + (1 - Math.random() * 2) * this.r / 4,
@@ -84,6 +91,7 @@ function Asteroid(p, size, a, v) {
                 ));
     }
     this.points.push(this.points[0]);
+
     this.createFragments = function() {
         var fragments = new Array();
         for (var i = 0; i < ASTEROID_FRAGMENTS[this.size]; i++)
@@ -93,20 +101,9 @@ function Asteroid(p, size, a, v) {
 }
 
 function Explosion(obj) {
-    this.time = EXPLOSION_DURATION[obj.size];
+    var time = EXPLOSION_DURATION[obj.size];
     var debris = new Array();
-    /*
-    var pts = obj.points;
-    for (var i = 0; i < pts.length - 1; i++) {
-        var ppts = pts.slice(i, i + 2);
-        ppts.push(ppts[0].add(ppts[1]).multiply(1 / 3));
-        ppts.push(ppts[0]);
-        debris.push(new Particle(obj.p,
-                ppts[0].add(ppts[1]).normalize().add(obj.v),
-                ppts,
-                Math.random() * EXPLOSION_DURATION));
-    }
-*/
+
     for (var i = 0; i < EXPLOSION_PARTICLES[obj.size]; i++) {
         var a = 2 * Math.PI * Math.random();
         var dir = new Vec2(Math.sin(a), Math.cos(a));
@@ -120,18 +117,16 @@ function Explosion(obj) {
         return debris;
     };
     this.draw = function(g) {
-        debris.forEach(function(particle) {
-            particle.draw(g);
-        });
+        debris.forEach(function(particle) { particle.draw(g); });
     };
     this.update = function() {
-        this.time--;
-        debris.forEach(function(particle) {
-            particle.update();
-        });
-        debris = debris.filter(function(d) {
-            return d.time > 0;
-        });
+        time--;
+        debris.forEach(function(particle) { particle.update(); });
+        debris = debris.filter(function(particle) { return particle.isAlive(); });
+    };
+
+    this.isAlive = function() {
+        return GameObject.isAlive.call(this) && time > 0;
     };
 }
 
@@ -141,10 +136,14 @@ function Particle(p, v, points, time) {
     this.v = v;
     this.a = 0;
     this.points = points;
-    this.time = time;
+
     this.update = function() {
-        this.time--;
+        time--;
         GameObject.update.call(this);
+    };
+
+    this.isAlive = function() {
+        return GameObject.isAlive.call(this) && time > 0;
     };
 }
 
@@ -155,6 +154,7 @@ function Ship(p, w, h, lives) {
     this.lives = lives;
     this.v = new Vec2(0, 0);
     this.points = [new Vec2(0, -1), new Vec2(1, 1), new Vec2(-1, 1), new Vec2(0, -1)];
+    this.bullets = new Array();
 
     var model = [new Vec2(0, -1), new Vec2(1, 1),
                  new Vec2(-1, 1), new Vec2(0, -1),
@@ -172,18 +172,42 @@ function Ship(p, w, h, lives) {
     model.forEach(scale);
     firePoints.forEach(scale);
 
+    
+    var engineCooldown = 0;
+
     this.thrust = function(amount) {
-        if (Math.random() < SHIP_ENGINE_FLICKER)
+        if (engineCooldown++ > 10) {
+            engineCooldown = 0;
+            var engineSound = new Audio();
+            engineSound.src = "audio/engine.wav";
+            engineSound.volume = 0.5;
+            engineSound.play();
             showFire = true;
+        }  
+            
         this.v = this.v.add(new Vec2(amount * Math.sin(this.a), -amount * Math.cos(this.a)));
     };
+
     this.turn = function(amount) {
         this.a = (this.a + amount) % (Math.PI * 2);
     };
+
+    this.fire = function() {
+        if (this.bullets.length < BULLET_COUNT) {
+            var audio = new Audio();
+            audio.src = "audio/fire.wav";
+            audio.play();
+            this.bullets.push(new Bullet(this.p, this.a, this.v));
+        }
+    };
+
     this.update = function() {
         showFire = false;
         GameObject.update.call(this);
         this.v = this.v.multiply(1 - SHIP_SLOW);
+
+        this.bullets.forEach(function (bullet) { bullet.update(); });
+        this.bullets = this.bullets.filter(function(bullet) { return bullet.isAlive(); });
     };
 
     this.draw = function(g) {
@@ -197,6 +221,7 @@ function Ship(p, w, h, lives) {
             fire.a = this.a;
             fire.draw(g);
         }
+        this.bullets.forEach(function (bullet) { bullet.draw(g); });
     };
 }
 
@@ -205,15 +230,17 @@ function Bullet(p, a, v) {
     this.p = p;
     this.a = a;
     this.v = v.add(new Vec2(Math.sin(a) * BULLET_SPEED, -Math.cos(a) * BULLET_SPEED));
-    this.dist = BULLET_DISTANCE;
     this.speed = this.v.magnitude();
     this.points = new Array();
     this.points.push(new Vec2(0, BULLET_LENGTH / 2));
     this.points.push(new Vec2(0, -BULLET_LENGTH / 2));
+    var dist = 0;
+
     this.update = function() {
         GameObject.update.call(this);
-        this.dist -= this.speed;
+        dist += this.speed;
     };
+
     this.collides = function(other) {
         var tail = this.project(this.points[0]);
         var nextHead = this.project(this.points[1]).add(this.v);
@@ -223,5 +250,9 @@ function Bullet(p, a, v) {
                 return true;
         }
         return false;
+    };
+
+    this.isAlive = function() {
+        return GameObject.isAlive.call(this) && dist < BULLET_DISTANCE;
     };
 }
