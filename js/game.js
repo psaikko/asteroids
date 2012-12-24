@@ -1,7 +1,4 @@
 "use strict";
-var asteroids_game = asteroids_game || {};
-
-var g = $("#viewport").get(0).getContext("2d");
 
 window.requestAnimFrame = (function(){
     return window.requestAnimationFrame       || 
@@ -16,16 +13,18 @@ window.requestAnimFrame = (function(){
 
 $(document).ready(function () {
     $(document).keyup(function (e) {
-        keys.state[e.which] = false;
+        asteroids_game.keys.state[e.which] = false;
     });
     $(document).keydown(function (e) {
-        keys.state[e.which] = true;
+        asteroids_game.keys.state[e.which] = true;
     });
 
-    new Engine().start();
+    asteroids_game.engine.start();
 });
 
-var keys = new (function () {
+var asteroids_game = asteroids_game || {};
+
+asteroids_game.keys = new (function () {
     this.up = 38;
     this.down = 40;
     this.left = 37;
@@ -51,7 +50,13 @@ var keys = new (function () {
     }
 })();
 
-function Engine() {
+asteroids_game.engine = new (function () {
+    var g = $("#viewport").get(0).getContext("2d");
+    var keys = asteroids_game.keys;
+    var Ship = asteroids_game.objects.Ship;
+    var Asteroid = asteroids_game.objects.Asteroid;
+    var Vec2 = asteroids_game.objects.Vec2;
+
     var end = false;
     var score = 0;
     var ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), 15, 20, 3);
@@ -181,7 +186,7 @@ function Engine() {
 
                     beatFrequency -= beat_delta;
                     score += ASTEROID_SCORE[destroyed.size];
-                    explosions.push(new Explosion(destroyed));
+                    explosions.push(destroyed.createExplosion());
                     return destroyed.createFragments()
                 ;})
                 .forEach(function (fragments) { asteroids = asteroids.concat(fragments); });
@@ -206,5 +211,5 @@ function Engine() {
         initLevel(0);
         tick();
     };
-}
+})();
 
