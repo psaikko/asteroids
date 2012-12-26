@@ -13,6 +13,8 @@ asteroids_game.config = {
 	},
 
 	SHIP: {
+		WIDTH: 15,
+		HEIGHT: 20,
 		ACCELERATION: 0.15,
 		TURNRATE: Math.PI*2 / 60,
 		SLOWDOWN: 0.02

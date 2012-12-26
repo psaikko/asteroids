@@ -63,11 +63,11 @@ asteroids_game.objects = (function () {
             }
         },
         collides: function(other) {
-            var points1 = this.points.map(this.project, this);
-            var points2 = other.points.map(other.project, other);
-            for (var i = 0; i < points1.length - 1; i++) {
-                for (var j = 0; j < points2.length - 1; j++) {
-                    if (intersects(points1[i], points1[i + 1], points2[j], points2[j + 1]))
+            var poly1 = this.points.map(this.project, this);
+            var poly2 = other.points.map(other.project, other);
+            for (var i = 0; i < poly1.length - 1; i++) {
+                for (var j = 0; j < poly2.length - 1; j++) {
+                    if (intersects(poly1[i], poly1[i + 1], poly2[j], poly2[j + 1]))
                         return true;
                 }
             }
@@ -96,9 +96,9 @@ asteroids_game.objects = (function () {
 
         for (var i = 0; i < CFG.ASTEROID.POINTS[size]; i++) {
             this.points.push(new Vec2(
-                    this.r * Math.sin(i * 2 * Math.PI / CFG.ASTEROID.POINTS[size]) + (1 - Math.random() * 2) * this.r / 4,
-                    this.r * Math.cos(i * 2 * Math.PI / CFG.ASTEROID.POINTS[size]) + (1 - Math.random() * 2) * this.r / 4
-                    ));
+                this.r * Math.sin(i * 2 * Math.PI / CFG.ASTEROID.POINTS[size]) + (1 - Math.random() * 2) * this.r / 4,
+                this.r * Math.cos(i * 2 * Math.PI / CFG.ASTEROID.POINTS[size]) + (1 - Math.random() * 2) * this.r / 4
+            ));
         }
         this.points.push(this.points[0]);
 
@@ -181,11 +181,10 @@ asteroids_game.objects = (function () {
         this.points.forEach(scale);
         model.forEach(scale);
         firePoints.forEach(scale);
-
         
         var engineCooldown = 0;
 
-        this.thrust = function(amount) {
+        this.thrust = function() {
             if (engineCooldown++ > 10) {
                 engineCooldown = 0;
                 var engineSound = new Audio();
@@ -195,11 +194,15 @@ asteroids_game.objects = (function () {
                 showFire = true;
             }  
                 
-            this.v = this.v.add(new Vec2(amount * Math.sin(this.a), -amount * Math.cos(this.a)));
+            this.v = this.v.add(new Vec2(CFG.SHIP.ACCELERATION * Math.sin(this.a), -CFG.SHIP.ACCELERATION * Math.cos(this.a)));
         };
 
-        this.turn = function(amount) {
-            this.a = (this.a + amount) % (Math.PI * 2);
+        this.turnLeft = function() {
+            this.a = (this.a - CFG.SHIP.TURNRATE) % (Math.PI * 2);
+        };
+
+        this.turnRight = function() {
+            this.a = (this.a + CFG.SHIP.TURNRATE) % (Math.PI * 2);
         };
 
         this.fire = function() {

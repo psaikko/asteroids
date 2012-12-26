@@ -63,7 +63,7 @@ asteroids_game.engine = new (function () {
 
     var end = false;
     var score = 0;
-    var ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), 15, 20, 3);
+    var ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 3);
     var level;
 
     var asteroids; var explosions;
@@ -98,13 +98,13 @@ asteroids_game.engine = new (function () {
     
     function handleInput() {
         if (keys.state[keys.up]) {
-            ship.thrust(CFG.SHIP.ACCELERATION);
+            ship.thrust();
         }
         if (keys.state[keys.left]) {
-            ship.turn(-CFG.SHIP.TURNRATE);
+            ship.turnLeft();
         }
         if (keys.state[keys.right]) {
-            ship.turn(CFG.SHIP.TURNRATE);
+            ship.turnRight();
         }
         if (keys.state[keys.space] && !keys.lastState[keys.space]) {
             ship.fire();
@@ -142,12 +142,16 @@ asteroids_game.engine = new (function () {
     
     function drawUI() {
         var scoreString = score > 0 ? ""+score : "00";
-        var char_w = 15;
-        var char_h = 20;
+        var char_w = CFG.SHIP.WIDTH; 
+        var char_h = CFG.SHIP.HEIGHT;
         var x = textLength("999999999", char_w) - textLength(scoreString, char_w);
-        var y = 10;
+        var y = 5;
         var scoreText = new Text(scoreString, x, y, char_w, char_h);
         scoreText.draw(g);
+
+        for (var i = 0; i < ship.lives; i++) {
+            new Ship(new Vec2(125 + CFG.SHIP.WIDTH*i, 2*y+char_h+10), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 0).draw(g);
+        }
     }
 
     function update() {
@@ -177,7 +181,14 @@ asteroids_game.engine = new (function () {
                 }
             });
         });
-    
+
+        asteroids.forEach(function (asteroid) {
+            if (ship.collides(asteroid)) {
+                ship.lives -= 1;
+                ship.p = new Vec2(g.canvas.width / 2, g.canvas.height / 2);
+            }
+        });
+
         asteroids.forEach(obj_update);
         explosions.forEach(obj_update);
 
@@ -196,7 +207,6 @@ asteroids_game.engine = new (function () {
                 .forEach(function (fragments) { asteroids = asteroids.concat(fragments); });
 
         asteroids = asteroids.filter(obj_alive);
-
         explosions = explosions.filter(obj_alive);
  
         if (asteroids.length == 0) {
