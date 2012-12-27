@@ -2,6 +2,7 @@ var asteroids_game = asteroids_game || {};
 
 asteroids_game.config = {
 	ASTEROID: {
+		INVINCIBILITY: 90,
 		POINTS: [8,10,12],
 		VELOCITY: 1,
 		SIZE: {LARGE: 2, MEDIUM: 1, SMALL: 0},
@@ -35,7 +36,13 @@ asteroids_game.config = {
 
 	AUDIO: {
 		BEAT_MAX: 100,
-		BEAT_MIN: 5
+		BEAT_MIN: 5,
+		PLAY: function (sound, vol) {
+			var audio = new Audio();
+            audio.src = "audio/"+sound+".wav";
+            audio.volume = vol || 1;
+            audio.play();
+		}
 	}
 };
 

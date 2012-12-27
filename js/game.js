@@ -63,6 +63,7 @@ asteroids_game.engine = new (function () {
 
     var end = false;
     var score = 0;
+    var life_counter = 0;
     var ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 3);
     var level;
 
@@ -155,13 +156,14 @@ asteroids_game.engine = new (function () {
     }
 
     function update() {
-        if (asteroids.length > 0 && beatCooldown++ > beatFrequency) {
-            var src = "audio/beat"+(beatNum+1)+".wav";
-            var audio = new Audio();
-            audio.src = src;
-            audio.volume = 0.4;
-            audio.play();
+        if (life_counter > 10000) {
+            life_counter -= 10000;
+            ship.lives++;
+            CFG.AUDIO.PLAY('1up', 0.5);
+        }
 
+        if (asteroids.length > 0 && beatCooldown++ > beatFrequency) {
+            CFG.AUDIO.PLAY('beat'+(beatNum+1), 0.4);
             beatNum = (beatNum + 1) % 2;
             beatCooldown = 0;
         }
@@ -183,9 +185,13 @@ asteroids_game.engine = new (function () {
         });
 
         asteroids.forEach(function (asteroid) {
-            if (ship.collides(asteroid)) {
-                ship.lives -= 1;
-                ship.p = new Vec2(g.canvas.width / 2, g.canvas.height / 2);
+            if (!ship.isInvincible() && ship.collides(asteroid)) {
+                asteroid.kill();    
+                ship.lives--;       
+                if (ship.lives < 1)
+                    end = true;
+                else
+                    ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, ship.lives);
             }
         });
 
@@ -194,13 +200,10 @@ asteroids_game.engine = new (function () {
 
         asteroids.filter(function (asteroid) { return !asteroid.isAlive(); })
                 .map(function (destroyed) {
-                    var audio = new Audio();
-                    audio.src = "audio/explosion.wav";
-                    audio.volume = 0.5;
-                    audio.play();
-
+                    CFG.AUDIO.PLAY('explosion', 0.5);
                     beatFrequency -= beat_delta;
                     score += CFG.ASTEROID.SCORE[destroyed.size];
+                    life_counter += CFG.ASTEROID.SCORE[destroyed.size];
                     explosions.push(destroyed.createExplosion());
                     return destroyed.createFragments()
                 ;})
@@ -215,10 +218,17 @@ asteroids_game.engine = new (function () {
     };
     
     function tick () {
-        handleInput();
+        if (!end) 
+            handleInput();
         draw();
         update();
-        if (!end) requestAnimFrame(tick);
+        if (!(end && explosions.length == 0)) 
+            requestAnimFrame(tick);
+        else {
+            g.beginPath();
+            new Text("game over", 300, 300, 15, 20).draw(g);
+            g.stroke();
+        }
     };
 
     this.start = function () { 
@@ -226,4 +236,3 @@ asteroids_game.engine = new (function () {
         tick();
     };
 })();
-

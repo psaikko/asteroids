@@ -172,6 +172,7 @@ asteroids_game.objects = (function () {
         var firePoints = [new Vec2(-0.5, 0.5), new Vec2(0,1),
                           new Vec2(0.5, 0.5), new Vec2(0,1)];
         var showFire = false;
+        var inv = CFG.ASTEROID.INVINCIBILITY;
 
         var scale = function(point) {
             point.x = point.x * w/2; 
@@ -184,13 +185,15 @@ asteroids_game.objects = (function () {
         
         var engineCooldown = 0;
 
+        this.isInvincible = function() {
+            return inv > 0;
+        };
+
         this.thrust = function() {
             if (engineCooldown++ > 10) {
                 engineCooldown = 0;
-                var engineSound = new Audio();
-                engineSound.src = "audio/engine.wav";
-                engineSound.volume = 0.5;
-                engineSound.play();
+                
+                CFG.AUDIO.PLAY('engine', 0.5);
                 showFire = true;
             }  
                 
@@ -207,14 +210,14 @@ asteroids_game.objects = (function () {
 
         this.fire = function() {
             if (this.bullets.length < CFG.BULLET.COUNT) {
-                var audio = new Audio();
-                audio.src = "audio/fire.wav";
-                audio.play();
+                CFG.AUDIO.PLAY('fire');
                 this.bullets.push(new Bullet(this.p, this.a, this.v));
             }
         };
 
         this.update = function() {
+            if (inv > 0)
+                inv--;
             showFire = false;
             GameObject.update.call(this);
             this.v = this.v.multiply(1 - CFG.SHIP.SLOWDOWN);
@@ -224,6 +227,9 @@ asteroids_game.objects = (function () {
         };
 
         this.draw = function(g) {
+            this.bullets.forEach(function (bullet) { bullet.draw(g); });
+            if (inv > 0 && inv % 30 > 15)
+                return;
             var projected = model.map(this.project, this);
             for (var i = 0; i < projected.length; i += 2) {
                 g.moveTo(projected[i].x, projected[i].y);
@@ -234,7 +240,7 @@ asteroids_game.objects = (function () {
                 fire.a = this.a;
                 fire.draw(g);
             }
-            this.bullets.forEach(function (bullet) { bullet.draw(g); });
+            
         };
     }
 
