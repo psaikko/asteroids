@@ -13,10 +13,10 @@ window.requestAnimFrame = (function(){
 
 $(document).ready(function () {
     $(document).keyup(function (e) {
-        asteroids_game.keys.state[e.which] = false;
+        asteroids_game.keyhandler.onKeyup(e);
     });
     $(document).keydown(function (e) {
-        asteroids_game.keys.state[e.which] = true;
+        asteroids_game.keyhandler.onKeydown(e);
     });
 
     asteroids_game.engine.start();
@@ -24,36 +24,10 @@ $(document).ready(function () {
 
 var asteroids_game = asteroids_game || {};
 
-asteroids_game.keys = new (function () {
-    this.up = 38;
-    this.down = 40;
-    this.left = 37;
-    this.right = 39;
-    this.space = 32;
-    this.ctrl = 17;
-    this.esc = 27;
-
-    this.state = new Array();
-    this.lastState = new Array();
-
-    for (var i = 0; i < 255; i++) {
-        this.state[i] = false; 
-        this.lastState[i] = false;
-    }
-
-    this.keyup = function (e) {
-        this.state[e.which] = false;
-    }
-
-    this.keydown = function (e) {
-        this.state[e.which] = true;
-    }
-})();
-
 asteroids_game.engine = new (function () {
     var g = $("#viewport").get(0).getContext("2d");
     // 'imports'
-    var keys = asteroids_game.keys;
+    var keys = asteroids_game.keyhandler;
     var Ship = asteroids_game.objects.Ship;
     var Asteroid = asteroids_game.objects.Asteroid;
     var Vec2 = asteroids_game.objects.Vec2;
@@ -98,25 +72,25 @@ asteroids_game.engine = new (function () {
     }  
     
     function handleInput() {
-        if (keys.state[keys.up]) {
+        if (keys.isKeydown('up')) {
             ship.thrust();
         }
-        if (keys.state[keys.left]) {
+        if (keys.isKeydown('left')) {
             ship.turnLeft();
         }
-        if (keys.state[keys.right]) {
+        if (keys.isKeydown('right')) {
             ship.turnRight();
         }
-        if (keys.state[keys.space] && !keys.lastState[keys.space]) {
+        if (keys.isKeypress('space')) {
             ship.fire();
         }
-        if (keys.state[keys.ctrl] && !keys.lastState[keys.ctrl]) {
+        if (keys.isKeypress('ctrl')) {
             ship.p = new Vec2(Math.random()*g.canvas.width, Math.random()*g.canvas.height);
         }
-        if (keys.state[keys.esc]) {
+        if (keys.isKeydown('esc')) {
             end = true;
         }
-        keys.lastState = keys.state.slice();
+        keys.tick();
     }
     
     function draw() {
