@@ -1,6 +1,6 @@
 var asteroids_game = asteroids_game || {};
 
-asteroids_game.keyhandler = new (function () {
+asteroids_game.keyhandler = (function () {
     var codes = {
     	up: 38,
     	down: 40,
@@ -19,24 +19,31 @@ asteroids_game.keyhandler = new (function () {
         lastState[i] = false;
     }
 
-    this.onKeyup = function (e) {
+    onKeyup = function (e) {
         state[e.which] = false;
     }
 
-    this.onKeydown = function (e) {
-    	console.log(e.which)
+    onKeydown = function (e) {
         state[e.which] = true;
     }
 
-    this.isKeydown = function(keyname) {
+    isKeydown = function(keyname) {
     	return state[codes[keyname]];
     }
 
-	this.isKeypress = function(keyname) {
+	isKeypress = function(keyname) {
 		return state[codes[keyname]] && !lastState[codes[keyname]];
 	}
 
-	this.tick = function() {
+	tick = function() {
 		lastState = state.slice();
 	}
+
+    return {
+        onKeyup: onKeyup,
+        onKeydown: onKeydown,
+        isKeydown: isKeydown,
+        isKeypress: isKeypress,
+        tick: tick
+    };
 })();

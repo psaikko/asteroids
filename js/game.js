@@ -12,13 +12,8 @@ window.requestAnimFrame = (function(){
 })();
 
 $(document).ready(function () {
-    $(document).keyup(function (e) {
-        asteroids_game.keyhandler.onKeyup(e);
-    });
-    $(document).keydown(function (e) {
-        asteroids_game.keyhandler.onKeydown(e);
-    });
-
+    $(document).keyup(asteroids_game.keyhandler.onKeyup);
+    $(document).keydown(asteroids_game.keyhandler.onKeydown);
     asteroids_game.engine.start();
 });
 
@@ -44,6 +39,10 @@ asteroids_game.engine = new (function () {
     var asteroids; var explosions;
     var beatFrequency; var beatCooldown; var beatNum; var beat_delta;
 
+    var obj_update = function(obj) { obj.update(); };
+    var obj_alive = function(obj) { return obj.isAlive(); };
+    var obj_draw = function(obj) { return obj.draw(g); };
+
     function initLevel(lvl) {
         level = lvl;
         asteroids = new Array();
@@ -57,7 +56,8 @@ asteroids_game.engine = new (function () {
         beat_delta = (CFG.AUDIO.BEAT_MAX - CFG.AUDIO.BEAT_MIN) / (asteroid_count*7 - 1);
 
         for (var i = 0; i < asteroid_count; i++) {
-            var x = 0; var y = 0;
+            var x = 0; 
+            var y = 0;
             if (Math.random() > 0.5) {
                 y = Math.random() * g.canvas.height;
                 x = Math.random() > 0.5 ? 0 : g.canvas.width;
@@ -72,24 +72,17 @@ asteroids_game.engine = new (function () {
     }  
     
     function handleInput() {
-        if (keys.isKeydown('up')) {
-            ship.thrust();
+        if(ship.isAlive()) {
+            if (keys.isKeydown('up'))       ship.thrust();
+            if (keys.isKeydown('left'))     ship.turnLeft();
+            if (keys.isKeydown('right'))    ship.turnRight();          
+            if (keys.isKeypress('space'))   ship.fire();
+            if (keys.isKeypress('ctrl')) {
+                ship.p = new Vec2(Math.random()*g.canvas.width, Math.random()*g.canvas.height);
+            }
         }
-        if (keys.isKeydown('left')) {
-            ship.turnLeft();
-        }
-        if (keys.isKeydown('right')) {
-            ship.turnRight();
-        }
-        if (keys.isKeypress('space')) {
-            ship.fire();
-        }
-        if (keys.isKeypress('ctrl')) {
-            ship.p = new Vec2(Math.random()*g.canvas.width, Math.random()*g.canvas.height);
-        }
-        if (keys.isKeydown('esc')) {
-            end = true;
-        }
+        if (keys.isKeydown('esc'))      end = true;
+              
         keys.tick();
     }
     
@@ -102,13 +95,8 @@ asteroids_game.engine = new (function () {
 
         ship.draw(g);
         
-        $.each(asteroids, function(i, asteroid) {
-            asteroid.draw(g);
-        });
-    
-        $.each(explosions, function(i, explosion) {
-            explosion.draw(g);
-        });
+        asteroids.forEach(obj_draw);
+        explosions.forEach(obj_draw);
     
         drawUI();
     
@@ -142,9 +130,6 @@ asteroids_game.engine = new (function () {
             beatCooldown = 0;
         }
 
-        var obj_update = function(obj) { obj.update(); };
-        var obj_alive = function(obj) { return obj.isAlive(); };
-
         ship.update();
 
         ship.bullets.forEach(function (bullet) {
@@ -159,13 +144,11 @@ asteroids_game.engine = new (function () {
         });
 
         asteroids.forEach(function (asteroid) {
-            if (!ship.isInvincible() && ship.collides(asteroid)) {
-                asteroid.kill();    
-                ship.lives--;       
-                if (ship.lives < 1)
-                    end = true;
-                else
-                    ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, ship.lives);
+            if (ship.isAlive() && !ship.isInvincible() && ship.collides(asteroid)) {
+                asteroid.kill(); 
+                explosions.push(ship.createExplosion());   
+                ship.kill();
+                ship.lives--;
             }
         });
 
@@ -188,17 +171,24 @@ asteroids_game.engine = new (function () {
  
         if (asteroids.length == 0) {
             initLevel(level + 1);
-        } 
+        }
+
+        if (!ship.isAlive() && explosions.length == 0) {
+            if (ship.lives < 1) {
+                end = true;
+            } else {
+                ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, ship.lives);
+            }
+        }   
     };
     
     function tick () {
-        if (!end) 
-            handleInput();
+        handleInput();
         draw();
         update();
-        if (!(end && explosions.length == 0)) 
+        if (!end) {
             requestAnimFrame(tick);
-        else {
+        } else {
             g.beginPath();
             new Text("game over", 300, 300, 15, 20).draw(g);
             g.stroke();

@@ -111,21 +111,35 @@ asteroids_game.objects = (function () {
     }
 
     function Explosion(obj) {
-        var time = CFG.EXPLOSION.DURATION[obj.size];
+        var time = CFG.EXPLOSION.DURATION[obj.size] || 50;
+        var energy = CFG.EXPLOSION.ENERGY[obj.size] || 3;
+        var particles = CFG.EXPLOSION.PARTICLES[obj.size] || 120;
         var debris = new Array();
 
-        for (var i = 0; i < CFG.EXPLOSION.PARTICLES[obj.size]; i++) {
+        for (var i = 0; i < particles; i++) {
             var a = 2 * Math.PI * Math.random();
             var dir = new Vec2(Math.sin(a), Math.cos(a));
             debris.push(new Particle(obj.p.add(dir.multiply(obj.r*Math.random())),
-                    dir.multiply(Math.random() * CFG.EXPLOSION.ENERGY[obj.size]).add(obj.v),
+                    dir.multiply(Math.random() * energy).add(obj.v),
                     [new Vec2(0, 0), dir.multiply(2)],
-                    Math.random() * CFG.EXPLOSION.DURATION[obj.size]));
+                    Math.random() * time));
         }
 
-        this.getDebris = function() {
-            return debris;
-        };
+        if (obj.model) {
+            var pts = obj.model;
+            for (var i = 0; i < pts.length; i += 2) {  
+                var particlePoints = pts.slice(i, i + 2);   
+                debris.push(new Particle(obj.p, 
+                    pts[i].add(pts[i + 1]).rotate(obj.a).normalize().add(obj.v),  
+                    particlePoints, 
+                    time, 
+                    obj.a,
+                    0.99));   
+            }
+        }
+
+        time++;
+
         this.draw = function(g) {
             debris.forEach(function(particle) { particle.draw(g); });
         };
@@ -141,13 +155,15 @@ asteroids_game.objects = (function () {
     }
 
     Particle.prototype = GameObject;
-    function Particle(p, v, points, time) {
+    function Particle(p, v, points, time, a, dv) {
         this.p = p;
         this.v = v;
-        this.a = 0;
-        this.points = points;
+        this.points = points;       
+        this.a = a || 0;
+        this.dv = dv || 1;
 
         this.update = function() {
+            this.v = this.v.multiply(this.dv);
             time--;
             GameObject.update.call(this);
         };
@@ -161,12 +177,13 @@ asteroids_game.objects = (function () {
     function Ship(p, w, h, lives) {
         this.p = p;
         this.a = 0;
+        this.r = Math.min(w, h);
         this.lives = lives;
         this.v = new Vec2(0, 0);
         this.points = [new Vec2(0, -1), new Vec2(1, 1), new Vec2(-1, 1), new Vec2(0, -1)];
         this.bullets = new Array();
 
-        var model = [new Vec2(0, -1), new Vec2(1, 1),
+        this.model = [new Vec2(0, -1), new Vec2(1, 1),
                      new Vec2(-1, 1), new Vec2(0, -1),
                      new Vec2(-0.75, 0.5), new Vec2(0.75, 0.5)];
         var firePoints = [new Vec2(-0.5, 0.5), new Vec2(0,1),
@@ -180,7 +197,7 @@ asteroids_game.objects = (function () {
         };
 
         this.points.forEach(scale);
-        model.forEach(scale);
+        this.model.forEach(scale);
         firePoints.forEach(scale);
         
         var engineCooldown = 0;
@@ -191,8 +208,7 @@ asteroids_game.objects = (function () {
 
         this.thrust = function() {
             if (engineCooldown++ > 10) {
-                engineCooldown = 0;
-                
+                engineCooldown = 0;           
                 CFG.AUDIO.PLAY('engine', 0.5);
                 showFire = true;
             }  
@@ -228,9 +244,11 @@ asteroids_game.objects = (function () {
 
         this.draw = function(g) {
             this.bullets.forEach(function (bullet) { bullet.draw(g); });
+            if (!this.isAlive())  
+                return;
             if (inv > 0 && inv % 30 > 15)
                 return;
-            var projected = model.map(this.project, this);
+            var projected = this.model.map(this.project, this);
             for (var i = 0; i < projected.length; i += 2) {
                 g.moveTo(projected[i].x, projected[i].y);
                 g.lineTo(projected[i + 1].x, projected[i + 1].y);
