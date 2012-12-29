@@ -11,3 +11,8 @@ body {
     height: 600px;
     margin: 0px auto; 
 }
+
+#instructions {
+	text-align: center;
+	color: white;
+}
