@@ -111,7 +111,7 @@ asteroids_game.objects = (function () {
     }
 
     function Explosion(obj) {
-        var time = CFG.EXPLOSION.DURATION[obj.size] || 50;
+        var time = CFG.EXPLOSION.DURATION[obj.size] || 100;
         var energy = CFG.EXPLOSION.ENERGY[obj.size] || 3;
         var particles = CFG.EXPLOSION.PARTICLES[obj.size] || 120;
         var debris = new Array();
@@ -189,7 +189,7 @@ asteroids_game.objects = (function () {
         var firePoints = [new Vec2(-0.5, 0.5), new Vec2(0,1),
                           new Vec2(0.5, 0.5), new Vec2(0,1)];
         var showFire = false;
-        var inv = CFG.ASTEROID.INVINCIBILITY;
+        var inv = CFG.SHIP.INVINCIBILITY;
 
         var scale = function(point) {
             point.x = point.x * w/2; 
@@ -254,6 +254,7 @@ asteroids_game.objects = (function () {
                 g.lineTo(projected[i + 1].x, projected[i + 1].y);
             }
             if (showFire) {
+                console.log('fire');
                 var fire = new Particle(this.p, null, firePoints, 0);
                 fire.a = this.a;
                 fire.draw(g);

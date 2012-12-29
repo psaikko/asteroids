@@ -78,7 +78,7 @@ asteroids_game.text = (function () {
             -1, 1, 1, 1,
             1, 1, 1, 0,
             1, 0, -1, 0,
-            -1, 0, 1, -1],
+            -0.2, 0, 1, -1],
         s: [1, 1, -1, 1,
             -1, 1, -1, 0,
             -1, 0, 1, 0,
@@ -103,7 +103,6 @@ asteroids_game.text = (function () {
         z: [-1, 1, 1, 1,
             1, 1, -1, -1,
             -1, -1, 1, -1],
-        ' ':[],
         0: [1, 1, -1, 1,
             -1, 1, -1, -1,
             -1, -1, 1, -1,
@@ -140,8 +139,12 @@ asteroids_game.text = (function () {
         9: [-1, 1, 1, 1,
             -1, 0, 1, 0,
             -1, 1, -1, 0,
-            1, 1, 1, -1]
+            1, 1, 1, -1],
+        ' ': [],
+        '_': [-1, -1, 1, -1]
     };
+
+    var characters = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     function Character(char, x, y, w, h) {
         var pts = letterPoints[char];
@@ -157,6 +160,7 @@ asteroids_game.text = (function () {
     function Text(text, x, y, lw, lh) {
         var characters = new Array();
 
+        text = text.toLowerCase();
         for (var i = 0; i < text.length; i++) {
             characters.push(new Character(text[i], x + lw / 2 + (lw * i * 1.3), y + lh / 2, lw, lh));
         }
@@ -174,6 +178,7 @@ asteroids_game.text = (function () {
         
     return {
         Text: Text,
-        textLength: textLength
-    }
+        textLength: textLength,
+        characters: characters
+    };
 })();

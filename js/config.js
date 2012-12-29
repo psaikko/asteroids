@@ -2,7 +2,7 @@ var asteroids_game = asteroids_game || {};
 
 asteroids_game.config = {
 	ASTEROID: {
-		INVINCIBILITY: 90,
+		
 		POINTS: [8,10,12],
 		VELOCITY: 1,
 		SIZE: {LARGE: 2, MEDIUM: 1, SMALL: 0},
@@ -14,6 +14,7 @@ asteroids_game.config = {
 	},
 
 	SHIP: {
+		INVINCIBILITY: 90,
 		WIDTH: 15,
 		HEIGHT: 20,
 		ACCELERATION: 0.15,
