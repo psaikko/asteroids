@@ -12,7 +12,24 @@ body {
     margin: 0px auto; 
 }
 
-#instructions {
+.text {
 	text-align: center;
 	color: white;
+}
+
+a {
+	color: white;
+}
+
+a:link { 
+	text-decoration:underline;
+}
+a:visited { 
+	text-decoration:underline;
+}
+a:hover { 
+	text-decoration: none;
+}
+a:active { 
+	text-decoration: none;
 }

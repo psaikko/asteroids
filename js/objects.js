@@ -254,7 +254,6 @@ asteroids_game.objects = (function () {
                 g.lineTo(projected[i + 1].x, projected[i + 1].y);
             }
             if (showFire) {
-                console.log('fire');
                 var fire = new Particle(this.p, null, firePoints, 0);
                 fire.a = this.a;
                 fire.draw(g);

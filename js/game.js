@@ -19,7 +19,7 @@ $(document).ready(function () {
 
 var asteroids_game = asteroids_game || {};
 
-asteroids_game.engine = new (function () {
+asteroids_game.engine = (function () {
     var g = $("#viewport").get(0).getContext("2d");
     // 'imports'
     var keys = asteroids_game.keyhandler;
@@ -32,12 +32,13 @@ asteroids_game.engine = new (function () {
 
     var game_over = false;
     var highscore_entry = null;
-    var highscore_list  = false;
+    var highscore_list  = 0;
+    var title_screen = 0;
 
     var score = 0;
     var lastScore = 0;
     var life_counter = 0;
-    var ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 3);
+    var ship;
     var level;
 
     var asteroids; var explosions;
@@ -75,10 +76,11 @@ asteroids_game.engine = new (function () {
         }
     }  
     
-    function reset() {
+    function startGame() {
         game_over = false;
         highscore_entry = null;
-        highscore_list  = false;
+        highscore_list  = 0;
+        title_screen = 0;
 
         score = 0;
         life_counter = 0;
@@ -88,7 +90,7 @@ asteroids_game.engine = new (function () {
     }
 
     function handleInput() {
-        if(ship.isAlive()) {
+        if(ship && ship.isAlive()) {
             if (keys.isKeydown('up'))       ship.thrust();
             if (keys.isKeydown('left'))     ship.turnLeft();
             if (keys.isKeydown('right'))    ship.turnRight();          
@@ -102,32 +104,28 @@ asteroids_game.engine = new (function () {
             if (keys.isKeypress('right')) {         
                 highscore_entry.name[highscore_entry.i] += 1;
                 highscore_entry.name[highscore_entry.i] %= asteroids_game.text.characters.length;
-                console.log(JSON.stringify(highscore_entry));
             }
             if (keys.isKeypress('left')) {
                 highscore_entry.name[highscore_entry.i] -= 1;
                 if (highscore_entry.name[highscore_entry.i] < 0)
                     highscore_entry.name[highscore_entry.i] += asteroids_game.text.characters.length
-                console.log(JSON.stringify(highscore_entry));
             }
             if (keys.isKeypress('ctrl')) {
                 highscore_entry.i += 1;
-                console.log(JSON.stringify(highscore_entry));
                 if (highscore_entry.i == 3) {
                     var name = highscore_entry.name.map(function (c) { 
                         return asteroids_game.text.characters[c]; 
                     }).join('');
                     asteroids_game.scores.postHighscore(name ,score)
                     highscore_entry = null;
-                    highscore_list = true;
+                    highscore_list = 600;
                 }
             }         
         }
 
-        if (highscore_list) {
+        if (highscore_list || title_screen) {
             if (keys.isKeypress('space')) {
-                console.log('reset');
-                reset();
+                startGame();
             }
         }
               
@@ -135,7 +133,7 @@ asteroids_game.engine = new (function () {
     }
     
     function draw() {
-        g.fillStyle = "rgb(0,20,0)";
+        g.fillStyle = "rgb(0,15,0)";
         g.fillRect(0, 0, g.canvas.width, g.canvas.height);
         
         g.strokeStyle = "rgb(255, 255, 255)";
@@ -149,50 +147,102 @@ asteroids_game.engine = new (function () {
         drawUI();
     
         g.stroke();
+        /* 
+        var image = g.getImageData(0, 0, g.canvas.width, g.canvas.height);
+        var imageData = image.data;
+        var h = g.canvas.height;
+        var w = g.canvas.width;
+        var tmp = new Array(w*h*4);
+        var i = w * h; 
+    
+        while(--i) {
+            if (4*i % (8*w) > 4*w) {
+                imageData[4*i+0] *= 0.4;
+                imageData[4*i+1] *= 0.4;
+                imageData[4*i+2] *= 0.4;
+            }
+        }
+        g.putImageData(image, 0, 0);
+        */
     };
     
     function drawUI() {
-        var scoreString = score > 0 ? ""+score : "00";
+        
         var char_w = CFG.SHIP.WIDTH; 
         var char_h = CFG.SHIP.HEIGHT;
-        var x = textLength("999999999", char_w) - textLength(scoreString, char_w);
-        var y = 10;
-        var scoreText = new Text(scoreString, x, y, char_w, char_h);
-        scoreText.draw(g);
 
-        for (var i = 0; i < ship.lives; i++) {
-            new Ship(new Vec2(125 + CFG.SHIP.WIDTH*i, 2*y+char_h+15), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 0).draw(g);
-        }
 
-        if (!game_over && ship.lives === 0) {
-            new Text("game over", 300, 300, 15, 20).draw(g);
+        if (ship) {
+            var scoreString = score > 0 ? ""+score : "00";
+            var scoreText = new Text(scoreString, char_w, char_h);
+            scoreText.x = (new Text("999999999", char_w, char_h)).measure().w - scoreText.measure().w;
+            scoreText.y = 10;
+            scoreText.draw(g);
+
+            for (var i = 0; i < ship.lives; i++) {
+                new Ship(new Vec2(125 + CFG.SHIP.WIDTH*i, 2*10+char_h+15), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 0).draw(g);
+            }
+
+            if (ship.lives === 0) {
+                new Text("game over", char_w, char_h, 300, 300).draw(g);
+            }
         }
 
         if (highscore_entry) {
             var i = 0;
 
-            new Text("your score is one of the ten best", 30, 110+(30*i++), 15, 20).draw(g);
-            new Text("please enter your initials", 30, 110+(30*i++), 15, 20).draw(g);
-            new Text("push rotate to select letter", 30, 110+(30*i++), 15, 20).draw(g);
-            new Text("push hyperspace when letter is correct", 30, 110+(30*i++), 15, 20).draw(g);
+            new Text("your score is one of the ten best", char_w, char_h, 30, 110+(30*i++)).draw(g);
+            new Text("please enter your initials", char_w, char_h, 30, 110+(30*i++)).draw(g);
+            new Text("push rotate to select letter", char_w, char_h, 30, 110+(30*i++)).draw(g);
+            new Text("push hyperspace when letter is correct", char_w, char_h, 30, 110+(30*i++)).draw(g);
 
             var name = highscore_entry.name.map(function (c) { 
                 return c > 0 ? asteroids_game.text.characters[c] : '_';
             }).join('');
 
-            new Text(name, 300, 300, 60, 80).draw(g);
+            new Text(name, 60, 80, 300, 300).draw(g);
         }
 
         if (highscore_list) {
-            new Text("highscores", 300, 70, 15, 20).draw(g);
+            var titleText = new Text("highscores", char_w, char_h);
+            titleText.y = 70;
+            titleText.x = 400 - titleText.measure().w / 2;
+            titleText.draw(g);
+
             var top = asteroids_game.scores.getTopScores();
-            var highscore_len = top[0].score.toString().length;
+            var highscoreLen = top[0].score.toString().length;
+            var highscoreText = new Text(" 1  "+top[0].score.toString()+"  AAA", char_w, char_h);;
             for (var i = 0; i < top.length; i++) {
-                var is = (i < 9 ? ' ' : '') + (i+1);
-                var score_padding = (new Array(highscore_len + 3 - top[i].score.toString().length)).join(' ');
-                new Text(is+score_padding+top[i].score+' '+top[i].name, 300, 100+30*(i+1), 15, 20).draw(g);
+                var num = (i < 9 ? ' ' : '') + (i+1);
+                var scorePadding = (new Array(highscoreLen + 3 - top[i].score.toString().length)).join(' ');
+                var scoreText = new Text(num+scorePadding+top[i].score+'  '+top[i].name, char_w, char_h);
+                scoreText.y = 100+30*(i+1);
+                scoreText.x = 400 - highscoreText.measure().w / 2;
+                scoreText.draw(g);
             }
-            new Text("fire to restart", 300, 460, 15, 20).draw(g);
+            if (highscore_list % 120 > 60) {
+                var blinkText = new Text("push fire to play", char_w, char_h);
+                blinkText.x = 400 - blinkText.measure().w / 2;
+                blinkText.y = 460;
+                blinkText.draw(g);
+            }
+            if (!--highscore_list)
+                title_screen = 600;
+        }
+
+        if (title_screen) {
+            var titleText = new Text("ASTEROIDS", 3*char_w, 3*char_h);
+            titleText.y = 200;
+            titleText.x = 400 - titleText.measure().w / 2;
+            titleText.draw(g);
+            if (title_screen % 120 > 60) {
+                var blinkText = new Text("push fire to play", char_w, char_h);
+                blinkText.x = 400 - blinkText.measure().w / 2;
+                blinkText.y = 460;
+                blinkText.draw(g);
+            }
+            if (!--title_screen)
+                highscore_list = 600;
         }
     }
 
@@ -255,10 +305,11 @@ asteroids_game.engine = new (function () {
         if (!ship.isAlive() && explosions.length == 0) {
             if (ship.lives < 1) {
                 game_over = true;
+                ship = null;
                 if (asteroids_game.scores.isHighscore(score)) {
                     highscore_entry = {i: 0, name: [0, 0, 0]};
                 } else {
-                    highscore_list = true;
+                    highscore_list = 600;
                 }
             } else {
                 ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, ship.lives);
@@ -270,13 +321,16 @@ asteroids_game.engine = new (function () {
         handleInput();
         draw();
         if (!game_over) update();
-        
-        
+              
         requestAnimFrame(tick);
     };
 
-    this.start = function () { 
-        initLevel(0);
-        tick();
+    return {
+        start:  
+            function () { 
+                game_over = true;
+                title_screen = 600;
+                tick(); 
+            }
     };
 })();

@@ -146,10 +146,10 @@ asteroids_game.text = (function () {
 
     var characters = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-    function Character(char, x, y, w, h) {
+    function Character(char) {
         var pts = letterPoints[char];
 
-        this.draw = function(g) {
+        this.draw = function(x, y, w, h, g) {
             for (var i = 0; i < pts.length; i += 4) {
                 g.moveTo(pts[i] * w / 2 + x, -pts[i + 1] * h / 2 + y);
                 g.lineTo(pts[i + 2] * w / 2 + x, -pts[i + 3] * h / 2 + y);
@@ -157,28 +157,38 @@ asteroids_game.text = (function () {
         };
     }
 
-    function Text(text, x, y, lw, lh) {
-        var characters = new Array();
+    function Text(text, lw, lh, x, y) {
+        var characters = new Array(text.length);
+        this.x = x || 0;
+        this.y = y || 0;
+        this.lw = lw;
+        this.lh = lh;
 
         text = text.toLowerCase();
         for (var i = 0; i < text.length; i++) {
-            characters.push(new Character(text[i], x + lw / 2 + (lw * i * 1.3), y + lh / 2, lw, lh));
+            characters[i] = new Character(text[i]);
         }
 
         this.draw = function(g) {
-            characters.forEach(function(char) {
-                char.draw(g);
-            });
+            for (var i = 0; i < characters.length; i++) {
+                characters[i].draw(
+                    this.x + this.lw / 2 + (this.lw * i * 1.3), 
+                    this.y + this.lh / 2, 
+                    this.lw, 
+                    this.lh, g);
+            }
         };
-    }
 
-    function textLength(text, lw) {
-        return lw*text.length*1.3;
+        this.measure = function() {
+            return {
+                w: this.lw * 1.3 * characters.length,
+                h: this.lh
+            }
+        }
     }
         
     return {
         Text: Text,
-        textLength: textLength,
         characters: characters
     };
 })();
