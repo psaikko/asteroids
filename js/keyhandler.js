@@ -3,9 +3,11 @@ var asteroids_game = asteroids_game || {};
 asteroids_game.keyhandler = (function () {
     var codes = {
     	up: 38,
-    	down: 40,
+        w: 87,
     	left: 37,
+        a: 65,
     	right: 39,
+        d: 68,
     	space: 32,
     	ctrl: 17,
     	esc: 27
@@ -21,10 +23,12 @@ asteroids_game.keyhandler = (function () {
 
     onKeyup = function (e) {
         state[e.which] = false;
+        e.preventDefault();
     }
 
     onKeydown = function (e) {
         state[e.which] = true;
+        e.preventDefault();
     }
 
     isKeydown = function(keyname) {

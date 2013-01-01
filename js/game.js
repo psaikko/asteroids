@@ -91,9 +91,9 @@ asteroids_game.engine = (function () {
 
     function handleInput() {
         if(ship && ship.isAlive()) {
-            if (keys.isKeydown('up'))       ship.thrust();
-            if (keys.isKeydown('left'))     ship.turnLeft();
-            if (keys.isKeydown('right'))    ship.turnRight();          
+            if (keys.isKeydown('up') || keys.isKeydown('w'))       ship.thrust();
+            if (keys.isKeydown('left') || keys.isKeydown('a'))     ship.turnLeft();
+            if (keys.isKeydown('right') || keys.isKeydown('d'))    ship.turnRight();          
             if (keys.isKeypress('space'))   ship.fire();
             if (keys.isKeypress('ctrl')) {
                 ship.p = new Vec2(Math.random()*g.canvas.width, Math.random()*g.canvas.height);
@@ -101,11 +101,11 @@ asteroids_game.engine = (function () {
         }
 
         if (highscore_entry) {            
-            if (keys.isKeypress('right')) {         
+            if (keys.isKeypress('right') || keys.isKeydown('d')) {         
                 highscore_entry.name[highscore_entry.i] += 1;
                 highscore_entry.name[highscore_entry.i] %= asteroids_game.text.characters.length;
             }
-            if (keys.isKeypress('left')) {
+            if (keys.isKeypress('left') || keys.isKeydown('a')) {
                 highscore_entry.name[highscore_entry.i] -= 1;
                 if (highscore_entry.name[highscore_entry.i] < 0)
                     highscore_entry.name[highscore_entry.i] += asteroids_game.text.characters.length

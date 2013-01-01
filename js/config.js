@@ -1,8 +1,7 @@
 var asteroids_game = asteroids_game || {};
 
 asteroids_game.config = {
-	ASTEROID: {
-		
+	ASTEROID: {		
 		POINTS: [8,10,12],
 		VELOCITY: 1,
 		SIZE: {LARGE: 2, MEDIUM: 1, SMALL: 0},
@@ -18,7 +17,7 @@ asteroids_game.config = {
 		WIDTH: 15,
 		HEIGHT: 20,
 		ACCELERATION: 0.15,
-		TURNRATE: Math.PI*2 / 60,
+		TURNRATE: Math.PI*2 / 75,
 		SLOWDOWN: 0.02
 	},
 
