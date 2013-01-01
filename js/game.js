@@ -12,6 +12,16 @@ window.requestAnimFrame = (function(){
 })();
 
 $(document).ready(function () {
+    var scale = function () {
+        var w = $(window).width();
+        var h = $(window).height();
+        var scale = Math.max(800 / Math.min(w, h*4/3), 1);
+        $('#canvasdiv').width(800/scale).height(600/scale);
+        $('#viewport').width(800/scale).height(600/scale);
+    }
+    scale();
+    $(window).resize(scale);
+
     $(document).keyup(asteroids_game.keyhandler.onKeyup);
     $(document).keydown(asteroids_game.keyhandler.onKeydown);
     asteroids_game.engine.start();
