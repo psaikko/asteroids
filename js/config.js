@@ -34,14 +34,30 @@ asteroids_game.config = {
 		DURATION: [20, 30, 40]
 	},
 
+	TITLE: {
+		SWITCH_TIME: 600
+	},
+
+	UFO: {
+		SIZE: {LARGE: 1, SMALL: 0},
+		SPEED: [2, 1.5],
+		WIDTH: [24, 40],
+		HEIGHT: [18, 30],
+		FIRERATE: [1, 1],
+		POINTS: [1000, 200]
+	},
+
 	AUDIO: {
+		MUTE: false,
 		BEAT_MAX: 100,
 		BEAT_MIN: 5,
 		PLAY: function (sound, vol) {
-			var audio = new Audio();
-            audio.src = "audio/"+sound+".wav";
-            audio.volume = vol || 1;
-            audio.play();
+			if (!asteroids_game.config.AUDIO.MUTE) {
+				var audio = new Audio();
+	            audio.src = "audio/"+sound+".wav";
+	            audio.volume = vol || 1;
+	            audio.play();
+	        }
 		}
 	}
 };

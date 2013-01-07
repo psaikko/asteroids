@@ -111,6 +111,7 @@ asteroids_game.objects = (function () {
     }
 
     function Explosion(obj) {
+        console.log(JSON.stringify(obj));
         var time = CFG.EXPLOSION.DURATION[obj.size] || 100;
         var energy = CFG.EXPLOSION.ENERGY[obj.size] || 3;
         var particles = CFG.EXPLOSION.PARTICLES[obj.size] || 120;
@@ -268,9 +269,7 @@ asteroids_game.objects = (function () {
         this.a = a;
         this.v = v.add(new Vec2(Math.sin(a) * CFG.BULLET.SPEED, -Math.cos(a) * CFG.BULLET.SPEED));
         this.speed = this.v.magnitude();
-        this.points = new Array();
-        this.points.push(new Vec2(0, CFG.BULLET.LENGTH / 2));
-        this.points.push(new Vec2(0, -CFG.BULLET.LENGTH / 2));
+        this.points = [new Vec2(0, CFG.BULLET.LENGTH / 2), new Vec2(0, -CFG.BULLET.LENGTH / 2)];
         var dist = 0;
 
         this.update = function() {
@@ -294,9 +293,56 @@ asteroids_game.objects = (function () {
         };
     }
 
+    Ufo.prototype = GameObject;
+    function Ufo(p, v, size) {
+        this.p = p;
+        this.v = v;
+        this.a = 0;
+        this.d = v.x;
+        this.size = size;
+        var w = CFG.UFO.WIDTH[size];
+        var h = CFG.UFO.HEIGHT[size];
+        this.r = Math.min(w, h);
+        
+        this.points = [
+            new Vec2(-1*w/2  ,0),
+            new Vec2(-0.5*w/2,-0.5*h/2),
+            new Vec2(-0.4*w/2,-1*h/2),
+            new Vec2(0.4*w/2 ,-1*h/2),
+            new Vec2(0.5*w/2 ,-0.5*h/2),
+            new Vec2(1*w/2   ,0),
+            new Vec2(0.5*w/2 ,0.5*h/2),
+            new Vec2(-0.5*w/2,0.5*h/2),
+            new Vec2(-1*w/2  ,0)
+        ];
+
+        this.bullets = [];
+
+        this.update = function() {
+            this.p = this.p.add(this.v);
+            if (this.d < 0) {
+                if (this.p.x < 0)
+                    GameObject.kill.call(this);
+            } else {
+                if (this.p.x > canvas.width)
+                    GameObject.kill.call(this);
+            }
+        }
+
+        this.draw = function(g) {
+            GameObject.draw.call(this, g);
+            var pts = this.points.map(this.project, this);
+            g.moveTo(pts[5].x, pts[5].y);
+            g.lineTo(pts[8].x, pts[8].y);
+            g.moveTo(pts[1].x, pts[1].y);
+            g.lineTo(pts[4].x, pts[4].y);
+        }
+    }
+
     return {
         Asteroid: Asteroid,
         Ship: Ship,
-        Vec2: Vec2
+        Vec2: Vec2,
+        Ufo: Ufo
     };
 })();

@@ -8,12 +8,23 @@ body {
 
 #viewport {
     border: 1px white solid;  
-    background-color: red;
 }
 
 #canvasdiv {
     margin: 0px auto; 
-    background-color: red;
+}
+
+#options {
+	width: 50%;
+	max-width: 400px;
+	min-width: 200px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.option {
+	text-align: left;
+	color: white;
 }
 
 .text {

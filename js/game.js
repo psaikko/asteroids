@@ -11,20 +11,24 @@ window.requestAnimFrame = (function(){
     };
 })();
 
-$(document).ready(function () {
-    var scale = function () {
-        var w = $(window).width();
-        var h = $(window).height();
-        var scale = Math.max(800 / Math.min(w, h*4/3), 1);
-        $('#canvasdiv').width(800/scale).height(600/scale);
-        $('#viewport').width(800/scale).height(600/scale);
-    }
-    scale();
-    $(window).resize(scale);
+$(window).resize(function () {
+    var w = $(window).width();
+    var h = $(window).height();
+    var canvas = $('#viewport').get(0);
+    var scale = Math.max(canvas.width / Math.min(w, h*canvas.width/canvas.height), 1);
+    $('#canvasdiv').width(canvas.width/scale).height(canvas.height/scale);
+    $('#viewport').width(canvas.width/scale).height(canvas.height/scale);
+});
 
+$('#mute').change(function () {
+    asteroids_game.config.AUDIO.MUTE = $(this)[0].checked;
+});
+
+$(document).ready(function () {
+    $(window).resize();
     $(document).keyup(asteroids_game.keyhandler.onKeyup);
     $(document).keydown(asteroids_game.keyhandler.onKeydown);
-    asteroids_game.engine.start();
+    asteroids_game.engine.tick();
 });
 
 var asteroids_game = asteroids_game || {};
@@ -35,21 +39,23 @@ asteroids_game.engine = (function () {
     var keys = asteroids_game.keyhandler;
     var Ship = asteroids_game.objects.Ship;
     var Asteroid = asteroids_game.objects.Asteroid;
+    var Ufo = asteroids_game.objects.Ufo;
     var Vec2 = asteroids_game.objects.Vec2;
     var Text = asteroids_game.text.Text;
     var textLength = asteroids_game.text.textLength;
     var CFG = asteroids_game.config;
 
-    var game_over = false;
+    var game_over = true;
     var highscore_entry = null;
     var highscore_list  = 0;
-    var title_screen = 0;
+    var title_screen = CFG.TITLE.SWITCH_TIME;
 
     var score = 0;
     var lastScore = 0;
     var life_counter = 0;
     var ship;
     var level;
+    var ufo;
 
     var asteroids; var explosions;
     var beatFrequency; var beatCooldown; var beatNum; var beat_delta;
@@ -62,6 +68,7 @@ asteroids_game.engine = (function () {
         level = lvl;
         asteroids = new Array();
         explosions = new Array();
+        ufo = null;
 
         beatFrequency = CFG.AUDIO.BEAT_MAX;
         beatCooldown = beatFrequency;
@@ -128,7 +135,7 @@ asteroids_game.engine = (function () {
                     }).join('');
                     asteroids_game.scores.postHighscore(name ,score)
                     highscore_entry = null;
-                    highscore_list = 600;
+                    highscore_list = CFG.TITLE.SWITCH_TIME;
                 }
             }         
         }
@@ -153,6 +160,8 @@ asteroids_game.engine = (function () {
             ship.draw(g);      
             asteroids.forEach(obj_draw);
             explosions.forEach(obj_draw);
+            if (ufo)
+                ufo.draw(g);
         }
         drawUI();
     
@@ -194,7 +203,10 @@ asteroids_game.engine = (function () {
             }
 
             if (ship.lives === 0) {
-                new Text("game over", char_w, char_h, 300, 300).draw(g);
+                var gameOverText = new Text("game over", char_w, char_h);
+                gameOverText.y = g.canvas.height / 2 - gameOverText.measure().h / 2;
+                gameOverText.x = g.canvas.width / 2 - gameOverText.measure().w / 2;
+                gameOverText.draw(g);
             }
         }
 
@@ -210,13 +222,16 @@ asteroids_game.engine = (function () {
                 return c > 0 ? asteroids_game.text.characters[c] : '_';
             }).join('');
 
-            new Text(name, 60, 80, 300, 300).draw(g);
+            var nameText = new Text(name, char_w*3, char_h*3);
+            nameText.y = 300;
+            nameText.x = g.canvas.width / 2 - nameText.measure().w / 2;
+            nameText.draw(g);
         }
 
         if (highscore_list) {
             var titleText = new Text("highscores", char_w, char_h);
             titleText.y = 70;
-            titleText.x = 400 - titleText.measure().w / 2;
+            titleText.x = g.canvas.width / 2 - titleText.measure().w / 2;
             titleText.draw(g);
 
             var top = asteroids_game.scores.getTopScores();
@@ -227,32 +242,34 @@ asteroids_game.engine = (function () {
                 var scorePadding = (new Array(highscoreLen + 3 - top[i].score.toString().length)).join(' ');
                 var scoreText = new Text(num+scorePadding+top[i].score+'  '+top[i].name, char_w, char_h);
                 scoreText.y = 100+30*(i+1);
-                scoreText.x = 400 - highscoreText.measure().w / 2;
+                scoreText.x = g.canvas.width / 2 - highscoreText.measure().w / 2;
                 scoreText.draw(g);
             }
             if (highscore_list % 120 > 60) {
                 var blinkText = new Text("push fire to play", char_w, char_h);
-                blinkText.x = 400 - blinkText.measure().w / 2;
+                blinkText.x = g.canvas.width / 2 - blinkText.measure().w / 2;
                 blinkText.y = 460;
                 blinkText.draw(g);
             }
-            if (!--highscore_list)
-                title_screen = 600;
+            if (!--highscore_list) {
+                title_screen = CFG.TITLE.SWITCH_TIME;
+            }
         }
 
         if (title_screen) {
             var titleText = new Text("ASTEROIDS", 3*char_w, 3*char_h);
             titleText.y = 200;
-            titleText.x = 400 - titleText.measure().w / 2;
+            titleText.x = g.canvas.width / 2 - titleText.measure().w / 2;
             titleText.draw(g);
             if (title_screen % 120 > 60) {
                 var blinkText = new Text("push fire to play", char_w, char_h);
-                blinkText.x = 400 - blinkText.measure().w / 2;
+                blinkText.x = g.canvas.width / 2 - blinkText.measure().w / 2;
                 blinkText.y = 460;
                 blinkText.draw(g);
             }
-            if (!--title_screen)
-                highscore_list = 600;
+            if (!--title_screen) {
+                highscore_list = CFG.TITLE.SWITCH_TIME;
+            }
         }
     }
 
@@ -281,6 +298,26 @@ asteroids_game.engine = (function () {
                 }
             });
         });
+
+        if (ufo) {
+            ufo.update();
+            ship.bullets.forEach(function (bullet) {
+                if (ufo && bullet.collides(ufo)) {
+                    ufo.kill();
+                    bullet.kill();
+                    explosions.push(ufo.createExplosion());
+                    CFG.AUDIO.PLAY('explosion', 0.5);
+                    score += CFG.UFO.SCORE[ufo.size];
+                    life_counter += CFG.UFO.SCORE[ufo.size];
+                }
+            });
+
+            if (!ufo.isAlive()) {
+                ufo = null;
+            }
+        } else {
+            spawnUfo();
+        }
 
         asteroids.forEach(function (asteroid) {
             if (ship.isAlive() && !ship.isInvincible() && ship.collides(asteroid)) {
@@ -319,7 +356,7 @@ asteroids_game.engine = (function () {
                 if (asteroids_game.scores.isHighscore(score)) {
                     highscore_entry = {i: 0, name: [0, 0, 0]};
                 } else {
-                    highscore_list = 600;
+                    highscore_list = CFG.TITLE.SWITCH_TIME;
                 }
             } else {
                 ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, ship.lives);
@@ -327,6 +364,16 @@ asteroids_game.engine = (function () {
         }   
     };
     
+    function spawnUfo() {
+        var dir = Math.random() > 0.5;
+        var p = new Vec2((dir ? 0 : g.canvas.width), Math.floor(Math.random()*g.canvas.height));
+        var t = new Vec2((dir ? g.canvas.width : 0), Math.floor(Math.random()*g.canvas.height));
+        var size = Math.random() > 0.5 ? CFG.UFO.SIZE.LARGE : CFG.UFO.SIZE.SMALL;
+        var v = t.subtract(p).normalize().multiply(CFG.UFO.SPEED[size]);
+
+        ufo = new Ufo(p, v, size);
+    };
+
     function tick () {
         handleInput();
         draw();
@@ -336,11 +383,6 @@ asteroids_game.engine = (function () {
     };
 
     return {
-        start:  
-            function () { 
-                game_over = true;
-                title_screen = 600;
-                tick(); 
-            }
+        tick: tick
     };
 })();
