@@ -44,7 +44,8 @@ asteroids_game.config = {
 		WIDTH: [24, 40],
 		HEIGHT: [18, 30],
 		FIRERATE: [1, 1],
-		POINTS: [1000, 200]
+		SCORE: [1000, 200],
+		SPAWNRATE: 0.1
 	},
 
 	AUDIO: {
@@ -58,6 +59,17 @@ asteroids_game.config = {
 	            audio.volume = vol || 1;
 	            audio.play();
 	        }
+		}, 
+		
+		LOOP: function(sound, vol) {
+			var audio = new Audio();
+            audio.src = "audio/"+sound+".wav";
+            audio.volume = vol || 1;
+            audio.addEventListener('ended', function() {
+            	this.currentTime = 0;
+            	this.play();
+            }, false)
+            audio.play();
 		}
 	}
 };

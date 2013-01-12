@@ -23,12 +23,23 @@ asteroids_game.keyhandler = (function () {
 
     onKeyup = function (e) {
         state[e.which] = false;
-        e.preventDefault();
+        if (isUsedKey(e.which)) 
+            e.preventDefault();
     }
 
     onKeydown = function (e) {
         state[e.which] = true;
-        e.preventDefault();
+        if (isUsedKey(e.which)) 
+            e.preventDefault();
+    }
+
+    function isUsedKey(keycode) {
+        for (var key in codes) {
+            if (codes[key] == keycode) {
+                return true;
+            }
+        }
+        return false;
     }
 
     isKeydown = function(keyname) {

@@ -111,7 +111,6 @@ asteroids_game.objects = (function () {
     }
 
     function Explosion(obj) {
-        console.log(JSON.stringify(obj));
         var time = CFG.EXPLOSION.DURATION[obj.size] || 100;
         var energy = CFG.EXPLOSION.ENERGY[obj.size] || 3;
         var particles = CFG.EXPLOSION.PARTICLES[obj.size] || 120;
