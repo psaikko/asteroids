@@ -4,6 +4,9 @@ asteroids_game.objects = (function () {
     var canvas = $("#viewport").get(0);
     var CFG = asteroids_game.config;
 
+    var obj_update = function(obj) { obj.update(); };
+    var obj_alive = function(obj) { return obj.isAlive(); };
+
     function Vec2(x, y) {
         this.x = x;
         this.y = y;
@@ -40,7 +43,7 @@ asteroids_game.objects = (function () {
         var s = q2.subtract(q);
         var rxs = r.cross(s);
         if (rxs === 0)
-            return False;
+            return false;
         var qsp = q.subtract(p);
         var t = qsp.cross(s) / rxs;
         var u = qsp.cross(r) / rxs;
@@ -82,6 +85,9 @@ asteroids_game.objects = (function () {
         },
         createExplosion: function() {
             return new Explosion(this);
+        },
+        closeTo: function(other) {
+            return this.p.subtract(other.p).magnitude() < 2*other.r;
         }
     };
 
@@ -177,7 +183,7 @@ asteroids_game.objects = (function () {
     function Ship(p, w, h, lives) {
         this.p = p;
         this.a = 0;
-        this.r = Math.min(w, h);
+        this.r = Math.max(w, h);
         this.lives = lives;
         this.v = new Vec2(0, 0);
         this.points = [new Vec2(0, -1), new Vec2(1, 1), new Vec2(-1, 1), new Vec2(0, -1)];
@@ -238,8 +244,8 @@ asteroids_game.objects = (function () {
             GameObject.update.call(this);
             this.v = this.v.multiply(1 - CFG.SHIP.SLOWDOWN);
 
-            this.bullets.forEach(function (bullet) { bullet.update(); });
-            this.bullets = this.bullets.filter(function(bullet) { return bullet.isAlive(); });
+            this.bullets.forEach(obj_update);
+            this.bullets = this.bullets.filter(obj_alive);
         };
 
         this.draw = function(g) {
@@ -257,18 +263,18 @@ asteroids_game.objects = (function () {
                 var fire = new Particle(this.p, null, firePoints, 0);
                 fire.a = this.a;
                 fire.draw(g);
-            }
-            
+            }         
         };
     }
 
     Bullet.prototype = GameObject;
-    function Bullet(p, a, v) {
+    function Bullet(p, a, v, l) {
+        var length = l || CFG.BULLET.LENGTH;
         this.p = p;
         this.a = a;
         this.v = v.add(new Vec2(Math.sin(a) * CFG.BULLET.SPEED, -Math.cos(a) * CFG.BULLET.SPEED));
         this.speed = this.v.magnitude();
-        this.points = [new Vec2(0, CFG.BULLET.LENGTH / 2), new Vec2(0, -CFG.BULLET.LENGTH / 2)];
+        this.points = [new Vec2(0, length / 2), new Vec2(0, -length / 2)];
         var dist = 0;
 
         this.update = function() {
@@ -301,8 +307,22 @@ asteroids_game.objects = (function () {
         this.size = size;
         var w = CFG.UFO.WIDTH[size];
         var h = CFG.UFO.HEIGHT[size];
-        this.r = Math.min(w, h);
+        this.r = Math.max(w, h);
         
+        var audio = new Audio();
+        audio.src = "audio/ufo"+size+".wav";
+        var vol = 0.25;
+        audio.volume = CFG.AUDIO.MUTE ? 0 : vol;
+
+        var audioLooper = function () {
+            this.currentTime = 0;
+            this.volume = CFG.AUDIO.MUTE ? 0 : vol;
+            this.play();
+        }
+
+        audio.addEventListener('ended', audioLooper);
+        audio.play();
+
         this.points = [
             new Vec2(-1*w/2  ,0),
             new Vec2(-0.5*w/2,-0.5*h/2),
@@ -315,26 +335,54 @@ asteroids_game.objects = (function () {
             new Vec2(-1*w/2  ,0)
         ];
 
-        this.bullets = [];
+        this.bullets = new Array();
 
-        this.update = function() {
+        var cooldown = 0;
+
+        this.update = function(ship) {
             this.p = this.p.add(this.v);
+            this.p.y = (this.p.y < 0 ? this.p.y + canvas.height : this.p.y) % canvas.height;
             if (this.d < 0) {
                 if (this.p.x < 0)
-                    GameObject.kill.call(this);
+                    this.kill();
             } else {
                 if (this.p.x > canvas.width)
-                    GameObject.kill.call(this);
+                    this.kill();
             }
+            if (Math.random() < CFG.UFO.MOVEMENT[size]) {
+                var newAngle = Math.PI / 3 - Math.random() * Math.PI / 1.5 +
+                               ((this.d < 0) ? Math.PI : 2 * Math.PI);
+                this.v = (new Vec2(Math.cos(newAngle), Math.sin(newAngle))).multiply(CFG.UFO.SPEED[size]);
+            }
+            if (--cooldown < 0) {
+                CFG.AUDIO.PLAY('ufo_shot', 0.3);
+                cooldown = CFG.UFO.SHOT_COOLDOWN;
+                var bulletAngle;
+                if (size == 0 && ship.isAlive()) {
+                    bulletAngle = Math.atan2(ship.p.y - this.p.y, ship.p.x - this.p.x) + Math.PI / 2;
+                } else {
+                    bulletAngle = Math.random() * 2 * Math.PI;
+                }
+
+                this.bullets.push(new Bullet(this.p, bulletAngle, new Vec2(0, 0)));
+            }
+            this.bullets.forEach(obj_update);
+            this.bullets = this.bullets.filter(obj_alive);
         }
 
         this.draw = function(g) {
             GameObject.draw.call(this, g);
+            this.bullets.forEach(function (bullet) { bullet.draw(g); });
             var pts = this.points.map(this.project, this);
             g.moveTo(pts[5].x, pts[5].y);
             g.lineTo(pts[8].x, pts[8].y);
             g.moveTo(pts[1].x, pts[1].y);
             g.lineTo(pts[4].x, pts[4].y);
+        }
+
+        this.kill = function() {
+            GameObject.kill.call(this);
+            audio.removeEventListener('ended', audioLooper);
         }
     }
 

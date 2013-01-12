@@ -2,7 +2,6 @@ var asteroids_game = asteroids_game || {};
 
 asteroids_game.engine = (function () {
     var g = $("#viewport").get(0).getContext("2d");
-    // 'imports'
     var keys = asteroids_game.keyhandler,
         Ship = asteroids_game.objects.Ship, 
         Asteroid = asteroids_game.objects.Asteroid, 
@@ -17,56 +16,14 @@ asteroids_game.engine = (function () {
     var title_screen = CFG.TITLE.SWITCH_TIME;
 
     var score = 0, lastScore = 0, life_counter = 0;
-    var ship, level, ufo, wasUfo = false;
+    var ship, level, ufo, ufoLock = false;
 
     var asteroids, explosions;
     var beatFrequency, beatCooldown, beatNum, beat_delta;
 
     var obj_update = function(obj) { obj.update(); };
     var obj_alive = function(obj) { return obj.isAlive(); };
-    var obj_draw = function(obj) { return obj.draw(g); };
-
-    function initLevel(lvl) {
-        level = lvl;
-        asteroids = new Array();
-        explosions = new Array();
-        ufo = null;
-
-        beatFrequency = CFG.AUDIO.BEAT_MAX;
-        beatCooldown = beatFrequency;
-        beatNum = 0;
-
-        var asteroid_count = CFG.ASTEROID.MIN_COUNT + level;
-        beat_delta = (CFG.AUDIO.BEAT_MAX - CFG.AUDIO.BEAT_MIN) / (asteroid_count*7 - 1);
-
-        for (var i = 0; i < asteroid_count; i++) {
-            var x = 0; 
-            var y = 0;
-            if (Math.random() > 0.5) {
-                y = Math.random() * g.canvas.height;
-                x = Math.random() > 0.5 ? 0 : g.canvas.width;
-            } else {
-                y = Math.random() > 0.5 ? 0 : g.canvas.height;
-                x = Math.random() * g.canvas.width;
-            }     
-            var d = Math.random() * 2 * Math.PI;
-
-            asteroids.push(new Asteroid(new Vec2(x, y), CFG.ASTEROID.SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
-        }
-    }  
-    
-    function startGame() {
-        game_over = false;
-        highscore_entry = null;
-        highscore_list  = 0;
-        title_screen = 0;
-
-        score = 0;
-        life_counter = 0;
-        ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 3);
-
-        initLevel(0);
-    }
+    var obj_draw = function(obj) { return obj.draw(g); }; 
 
     function handleInput() {
         if(ship && ship.isAlive()) {
@@ -128,30 +85,10 @@ asteroids_game.engine = (function () {
         drawUI();
     
         g.stroke();
-        /* 
-        var image = g.getImageData(0, 0, g.canvas.width, g.canvas.height);
-        var imageData = image.data;
-        var h = g.canvas.height;
-        var w = g.canvas.width;
-        var tmp = new Array(w*h*4);
-        var i = w * h; 
-    
-        while(--i) {
-            if (4*i % (8*w) > 4*w) {
-                imageData[4*i+0] *= 0.4;
-                imageData[4*i+1] *= 0.4;
-                imageData[4*i+2] *= 0.4;
-            }
-        }
-        g.putImageData(image, 0, 0);
-        */
     };
     
-    function drawUI() {
-        
-        var char_w = CFG.SHIP.WIDTH; 
-        var char_h = CFG.SHIP.HEIGHT;
-
+    function drawUI() {     
+        var char_w = CFG.SHIP.WIDTH, char_h = CFG.SHIP.HEIGHT;
 
         if (ship) {
             var scoreString = score > 0 ? ""+score : "00";
@@ -198,7 +135,7 @@ asteroids_game.engine = (function () {
 
             var top = asteroids_game.scores.getTopScores();
             var highscoreLen = top[0].score.toString().length;
-            var highscoreText = new Text(" 1  "+top[0].score.toString()+"  AAA", char_w, char_h);;
+            var highscoreText = new Text(" 1  "+top[0].score.toString()+"  AAA", char_w, char_h);
             for (var i = 0; i < top.length; i++) {
                 var num = (i < 9 ? ' ' : '') + (i+1);
                 var scorePadding = (new Array(highscoreLen + 3 - top[i].score.toString().length)).join(' ');
@@ -236,12 +173,6 @@ asteroids_game.engine = (function () {
     }
 
     function update() {
-        if (life_counter > 10000) {
-            life_counter -= 10000;
-            ship.lives++;
-            CFG.AUDIO.PLAY('1up', 0.5);
-        }
-
         if (asteroids.length > 0 && beatCooldown++ > beatFrequency) {
             CFG.AUDIO.PLAY('beat'+(beatNum+1), 0.4);
             beatNum = (beatNum + 1) % 2;
@@ -252,43 +183,59 @@ asteroids_game.engine = (function () {
 
         ship.bullets.forEach(function (bullet) {
             asteroids.forEach(function (asteroid) {
-                if (bullet.p.subtract(asteroid.p).magnitude() < 2*asteroid.r) {
-                    if (bullet.collides(asteroid)) {
-                        wasUfo = false;
-                        bullet.kill();
-                        asteroid.kill();
-                    }
+                if (asteroid.isAlive() && bullet.closeTo(asteroid) && bullet.collides(asteroid)) {
+                    ufoLock = false;
+                    bullet.kill();
+                    explode(asteroid);
+                    addScore(CFG.ASTEROID.SCORE[asteroid.size]);
                 }
             });
         });
 
         if (ufo) {
-            ufo.update();
+            ufo.update(ship);
             ship.bullets.forEach(function (bullet) {
-                if (ufo && bullet.collides(ufo)) {
-                    wasUfo = true;
-                    ufo.kill();
+                if (bullet.closeTo(ufo) && bullet.collides(ufo)) {
                     bullet.kill();
-                    explosions.push(ufo.createExplosion());
-                    CFG.AUDIO.PLAY('explosion', 0.5);
-                    score += CFG.UFO.SCORE[ufo.size];
-                    life_counter += CFG.UFO.SCORE[ufo.size];
+                    ufoLock = true;
+                    explode(ufo);  
+                    addScore(CFG.UFO.SCORE[ufo.size]);
                 }
             });
 
-            if (!ufo.isAlive()) {
+            ufo.bullets.forEach(function (bullet) {
+                if (ship.isAlive() && !ship.isInvincible() && bullet.closeTo(ship) && bullet.collides(ship)) {
+                    bullet.kill();
+                    explode(ship);
+                    ship.lives--;
+                }
+            })
+
+            if (ship.isAlive() && !ship.isInvincible() && ship.closeTo(ufo) && ship.collides(ufo)) {
+                addScore(CFG.UFO.SCORE[ufo.size]);
+                explode(ship);
+                explode(ufo);
+                ship.lives--;
+            }
+
+            if (!ufo.isAlive()) {        
                 ufo = null;
             }
-        } else if (!wasUfo && Math.random() < CFG.UFO.SPAWNRATE) {
+        } else if (!ufoLock && Math.random() < CFG.UFO.SPAWNRATE) {
             spawnUfo();
         }
 
         asteroids.forEach(function (asteroid) {
-            if (ship.isAlive() && !ship.isInvincible() && ship.collides(asteroid)) {
-                asteroid.kill(); 
-                explosions.push(ship.createExplosion());   
-                ship.kill();
+            if (ship.isAlive() && !ship.isInvincible() && ship.closeTo(asteroid) && ship.collides(asteroid)) {
+                addScore(CFG.ASTEROID.SCORE[asteroid.size]);
+                explode(ship);
+                explode(asteroid);
                 ship.lives--;
+            }
+
+            if (ufo && ufo.closeTo(asteroid) && ufo.collides(asteroid)) {
+                explode(ufo);
+                explode(asteroid);     
             }
         });
 
@@ -297,24 +244,21 @@ asteroids_game.engine = (function () {
 
         asteroids.filter(function (asteroid) { return !asteroid.isAlive(); })
                 .map(function (destroyed) {
-                    CFG.AUDIO.PLAY('explosion', 0.5);
                     beatFrequency -= beat_delta;
-                    score += CFG.ASTEROID.SCORE[destroyed.size];
-                    life_counter += CFG.ASTEROID.SCORE[destroyed.size];
-                    explosions.push(destroyed.createExplosion());
-                    return destroyed.createFragments()
-                ;})
+                    return destroyed.createFragments();
+                })
                 .forEach(function (fragments) { asteroids = asteroids.concat(fragments); });
 
         asteroids = asteroids.filter(obj_alive);
         explosions = explosions.filter(obj_alive);
  
-        if (asteroids.length == 0 && explosions.length == 0) {
+        if (!ufo && asteroids.length == 0 && explosions.length == 0) {
             initLevel(level + 1);
         }
 
         if (!ship.isAlive() && explosions.length == 0) {
             if (ship.lives < 1) {
+                if (ufo) ufo.kill();
                 game_over = true;
                 ship = null;
                 if (asteroids_game.scores.isHighscore(score)) {
@@ -328,6 +272,12 @@ asteroids_game.engine = (function () {
         }   
     };
     
+    function explode(object) {
+        explosions.push(object.createExplosion());
+        CFG.AUDIO.PLAY('explosion', 0.5);
+        object.kill();
+    }
+
     function spawnUfo() {
         var dir = Math.random() > 0.5;
         var p = new Vec2((dir ? 0 : g.canvas.width), Math.floor(Math.random()*g.canvas.height));
@@ -338,11 +288,61 @@ asteroids_game.engine = (function () {
         ufo = new Ufo(p, v, size);
     };
 
+    function addScore(value) {
+        score += value;
+        life_counter += value;
+
+        if (life_counter > 10000) {
+            life_counter -= 10000;
+            ship.lives++;
+            CFG.AUDIO.PLAY('1up', 0.5);
+        }
+    };
+
+    function startGame() {
+        game_over = false;
+        highscore_entry = null;
+        highscore_list  = 0;
+        title_screen = 0;
+
+        score = 0;
+        life_counter = 0;
+        ship = new Ship(new Vec2(g.canvas.width / 2, g.canvas.height / 2), CFG.SHIP.WIDTH, CFG.SHIP.HEIGHT, 3);
+
+        initLevel(0);
+    };
+
+    function initLevel(lvl) {
+        level = lvl;
+        asteroids = new Array();
+        explosions = new Array();
+        ufo = null;
+
+        beatFrequency = CFG.AUDIO.BEAT_MAX;
+        beatCooldown = beatFrequency;
+        beatNum = 0;
+
+        var asteroid_count = Math.min(CFG.ASTEROID.MAX_COUNT, CFG.ASTEROID.MIN_COUNT + level);
+        beat_delta = (CFG.AUDIO.BEAT_MAX - CFG.AUDIO.BEAT_MIN) / (asteroid_count*7 - 1);
+
+        for (var i = 0; i < asteroid_count; i++) {
+            var x = 0, y = 0;
+            if (Math.random() > 0.5) {
+                y = Math.random() * g.canvas.height;
+                x = Math.random() > 0.5 ? 0 : g.canvas.width;
+            } else {
+                y = Math.random() > 0.5 ? 0 : g.canvas.height;
+                x = Math.random() * g.canvas.width;
+            }     
+            var d = Math.random() * 2 * Math.PI;
+            asteroids.push(new Asteroid(new Vec2(x, y), CFG.ASTEROID.SIZE['LARGE'], 0, new Vec2(Math.sin(d), Math.cos(d))));
+        }
+    };
+
     function tick () {
         handleInput();
         draw();
-        if (!game_over) update();
-              
+        if (!game_over) update();             
         requestAnimFrame(tick);
     };
 

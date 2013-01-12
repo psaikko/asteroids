@@ -18,7 +18,7 @@ asteroids_game.config = {
 		HEIGHT: 20,
 		ACCELERATION: 0.15,
 		TURNRATE: Math.PI*2 / 75,
-		SLOWDOWN: 0.02
+		SLOWDOWN: 0.0175
 	},
 
 	BULLET: {
@@ -43,9 +43,10 @@ asteroids_game.config = {
 		SPEED: [2, 1.5],
 		WIDTH: [24, 40],
 		HEIGHT: [18, 30],
-		FIRERATE: [1, 1],
+		SHOT_COOLDOWN: 75,
+		MOVEMENT: [0.005, 0.003],
 		SCORE: [1000, 200],
-		SPAWNRATE: 0.1
+		SPAWNRATE: 0.001
 	},
 
 	AUDIO: {
@@ -59,17 +60,6 @@ asteroids_game.config = {
 	            audio.volume = vol || 1;
 	            audio.play();
 	        }
-		}, 
-		
-		LOOP: function(sound, vol) {
-			var audio = new Audio();
-            audio.src = "audio/"+sound+".wav";
-            audio.volume = vol || 1;
-            audio.addEventListener('ended', function() {
-            	this.currentTime = 0;
-            	this.play();
-            }, false)
-            audio.play();
 		}
 	}
 };
